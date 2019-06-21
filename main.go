@@ -4,32 +4,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
 
 	"gopkg.in/yaml.v2"
 )
-
-// Proc structs contain basic information of launched processes
-type Proc struct {
-	Command       string
-	Instances     int
-	AtLaunch      bool
-	RestartPolicy string
-	ExpectedExit  string
-	StartCheckup  string
-	MaxRestarts   string
-	StopSignal    string
-	KillTimeout   int
-	Redirections  struct {
-		Stdout string
-		Stderr string
-	}
-	EnvVars    string
-	WorkingDir string
-	Umask      string
-	start      time.Time
-	Process    os.Process
-}
 
 // Check absence of errors
 func Check(e error) {
@@ -53,14 +30,13 @@ func loadConfig(yamlFile string) []Proc {
 }
 
 func main() {
-	if l := len(os.Args); l < 2 {
-		fmt.Print("Error: Please specify configuration file(s)\n")
+	var supervisor Supervisor
+
+	if l := len(os.Args); l != 2 {
+		fmt.Print("Error: Please specify a configuration file\n")
 	} else {
-		var procs []Proc
-		for i := 1; i < l; i++ {
-			yamlFile := os.Args[i]
-			procs = append(procs, loadConfig(yamlFile)...)
-		}
-		fmt.Print(procs)
+		yamlFile := os.Args[1]
+		supervisor.procs = loadConfig(yamlFile)
+		supervisor.Start()
 	}
 }
