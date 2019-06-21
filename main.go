@@ -2,72 +2,65 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"io/ioutil"
+	"os"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
 
-/*
-• The command to use to launch the program
-• The number of processes to start and keep running
-• Whether to start this program at launch or not
-• Whether the program should be restarted always, never, or on unexpected exits
-only
-• Which return codes represent an "expected" exit status
-• How long the program should be running after it’s started for it to be considered
-"successfully started"
-• How many times a restart should be attempted before aborting
-• Which signal should be used to stop (i.e. exit gracefully) the program
-• How long to wait after a graceful stop before killing the program
-• Options to discard the program’s stdout/stderr or to redirect them to files
-• Environment variables to set before launching the program
-• A working directory to set before launching the program
-• An umask to set before launching the program
-*/
+// Proc structs contain basic information of launched processes
+type Proc struct {
+	Command       string
+	Instances     int
+	AtLaunch      bool
+	RestartPolicy string
+	ExpectedExit  string
+	StartCheckup  string
+	MaxRestarts   string
+	StopSignal    string
+	KillTimeout   int
+	Redirections  struct {
+		Stdout string
+		Stderr string
+	}
+	EnvVars    string
+	WorkingDir string
+	Umask      string
+	start      time.Time
+	Process    os.Process
+}
 
-var data = `
-a: Easy!
-b:
-  c: 2
-  d: [3, 4]
-`
-
-// Note: struct fields must be public in order for unmarshal to
-// correctly populate the data.
-type T struct {
-	A string
-	B struct {
-		RenamedC int   `yaml:"c"`
-		D        []int `yaml:",flow"`
+// Check absence of errors
+func Check(e error) {
+	if e != nil {
+		panic(e)
 	}
 }
 
+func loadYamlFile(yamlFile string) []byte {
+	buf, err := ioutil.ReadFile(yamlFile)
+	Check(err)
+	return buf
+}
+
+func loadConfig(yamlFile string) []Proc {
+	config := []Proc{}
+	file := loadYamlFile(yamlFile)
+	err := yaml.Unmarshal(file, &config)
+	Check(err)
+	return config
+}
+
 func main() {
-	t := T{}
-
-	err := yaml.Unmarshal([]byte(data), &t)
-	if err != nil {
-		log.Fatalf("error: %v", err)
+	if l := len(os.Args); l < 2 {
+		fmt.Print("Error: Please specify configuration file(s)\n")
+	} else {
+		var procs []Proc
+		for i := 1; i < l; i++ {
+			yamlFile := os.Args[i]
+			procs = append(procs, loadConfig(yamlFile)...)
+		}
+		fmt.Print(procs)
 	}
-	fmt.Printf("--- t:\n%v\n\n", t)
-
-	d, err := yaml.Marshal(&t)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	fmt.Printf("--- t dump:\n%s\n\n", string(d))
-
-	m := make(map[interface{}]interface{})
-
-	err = yaml.Unmarshal([]byte(data), &m)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	fmt.Printf("--- m:\n%v\n\n", m)
-
-	d, err = yaml.Marshal(&m)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	fmt.Printf("--- m dump:\n%s\n\n", string(d))
 }
