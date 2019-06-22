@@ -37,16 +37,16 @@ type Proc struct {
 	MaxRestarts   int
 	StopSignal    os.Signal
 	KillTimeout   int
-	EnvVars       string
+	EnvVars       []string
 	WorkingDir    string
 	Umask         int
 	start         time.Time
 	pid           int
 	status        int
 	Redirections  struct {
-		Stdin  string
-		Stdout string
-		Stderr string
+		Stdin  *os.File
+		Stdout *os.File
+		Stderr *os.File
 	}
 }
 
