@@ -1,5 +1,7 @@
+# an id to uniquely identify the process
+- id: 0
 # The command to use to launch the program
-- command: sleep 9999
+  command: sleep 9999
 # The number of processes to start and keep running
   instances: 1
 # Whether to start this program at launch or not
@@ -18,6 +20,7 @@
   killtimeout: 1
 # Options to discard the program’s stdout/stderr or to redirect them to files
   redirections:
+    stdin:
     stdout:
     stderr:
 # Environment variables to set before launching the program

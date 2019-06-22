@@ -4,9 +4,37 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
+	"strconv"
+	"strings"
+	"syscall"
 
 	"gopkg.in/yaml.v2"
 )
+
+// ProcConfig represents the config struct loaded from yaml
+type ProcConfig struct {
+	ID            string
+	Command       string
+	Instances     string
+	AtLaunch      string
+	RestartPolicy string
+	ExpectedExit  string
+	StartCheckup  string
+	MaxRestarts   string
+	StopSignal    string
+	KillTimeout   string
+	EnvVars       string
+	WorkingDir    string
+	Umask         string
+	pid           string
+	status        string
+	Redirections  struct {
+		Stdin  string
+		Stdout string
+		Stderr string
+	}
+}
 
 // Check absence of errors
 func Check(e error) {
@@ -15,18 +43,43 @@ func Check(e error) {
 	}
 }
 
-func loadYamlFile(yamlFile string) []byte {
-	buf, err := ioutil.ReadFile(yamlFile)
-	Check(err)
-	return buf
+// parseInt uses https://golang.org/pkg/reflect/ to dynamically set struct member
+func parseInt(cfg *ProcConfig, proc *Proc, defaultVal int, member string, message string) {
+	cfgReflect := reflect.ValueOf(cfg)
+	procReflect := reflect.ValueOf(proc)
+	cfgVal := reflect.Indirect(cfgReflect).FieldByName(member).String()
+
+	if cfgVal == "" {
+		proc.Umask = defaultVal
+	} else if val, err := strconv.Atoi(cfgVal); err != nil {
+		fmt.Printf(message, cfgVal)
+		os.Exit(1)
+	} else {
+		procReflect.Elem().FieldByName(member).SetInt(int64(val))
+
+	}
+}
+func setDefaults(configProcs []ProcConfig) []Proc {
+	procs := []Proc{}
+	defaultUmask := syscall.Umask(0)
+
+	syscall.Umask(defaultUmask)
+	for _, cfg := range configProcs {
+		var proc Proc
+		proc.Args = strings.Fields(cfg.Command)
+		// check id, err exit if not set
+		parseInt(&cfg, &proc, defaultUmask, "Umask", "Error: invalid umask value: %s\n")
+	}
+	return procs
 }
 
 func loadConfig(yamlFile string) []Proc {
-	config := []Proc{}
-	file := loadYamlFile(yamlFile)
-	err := yaml.Unmarshal(file, &config)
+	configs := []ProcConfig{}
+	buf, err := ioutil.ReadFile(yamlFile)
 	Check(err)
-	return config
+	err = yaml.Unmarshal(buf, &configs)
+	Check(err)
+	return setDefaults(configs)
 }
 
 func main() {
@@ -36,7 +89,7 @@ func main() {
 		fmt.Print("Error: Please specify a configuration file\n")
 	} else {
 		yamlFile := os.Args[1]
-		supervisor.procs = loadConfig(yamlFile)
-		supervisor.Start()
+		newProcs := loadConfig(yamlFile)
+		supervisor.StartAll(newProcs)
 	}
 }
