@@ -8,24 +8,24 @@ import (
 )
 
 const (
-	// ProcStopped signifies process not currently running
-	ProcStopped = iota
-	// ProcRunning signifies process currently running
-	ProcRunning = iota
-	// ProcStart signifies process beginning its start sequence
-	ProcStart = iota
+	// PROCSTOPPED signifies process not currently running
+	PROCSTOPPED = iota
+	// PROCRUNNING signifies process currently running
+	PROCRUNNING = iota
+	// PROCSTART signifies process beginning its start sequence
+	PROCSTART = iota
 )
 
 const (
-	// RestartAlways signifies restart whenever process is stopped
-	RestartAlways = iota
-	// RestartNever signifies never restart process
-	RestartNever = iota
-	// RestartUnexpected signifies restart on unexpected exit
-	RestartUnexpected = iota
+	// RESTARTALWAYS signifies restart whenever process is stopped
+	RESTARTALWAYS = iota
+	// RESTARTNEVER signifies never restart process
+	RESTARTNEVER = iota
+	// RESTARTUNEXPECTED signifies restart on unexpected exit
+	RESTARTUNEXPECTED = iota
 )
 
-// Proc structs contain basic information of launched processes
+// Proc structs track information of processes given in configuration
 type Proc struct {
 	ID            int
 	Args          []string
@@ -43,35 +43,50 @@ type Proc struct {
 	start         time.Time
 	pid           int
 	status        int
-	Redirections  struct {
-		Stdin  *os.File
-		Stdout *os.File
-		Stderr *os.File
-	}
+	Redirections  []*os.File
 }
 
 // Restart will kill the currently running process with the given Pid,
 // and start again with new attributes
-func (p *Proc) Restart(pid int, pids map[int]os.Process) (int, error) {
-	var newPid int
-	return newPid, nil
+func (p *Proc) Restart(pid int, pids map[int]*os.Process) (int, error) {
+	return 0, nil
+}
+
+// PerformStartCheckup called after process started, moves status: PROCSTART -> PROCRUNNING
+func (p *Proc) PerformStartCheckup() {
+	timeout := time.Duration(p.StartCheckup) * time.Second
+	time.Sleep(timeout)
+	p.status = PROCRUNNING
+	p.start = time.Now()
+}
+
+// WaitForExit catches process exit, removes process pids map, moves status: PROCRUNNING -> PROCSTOPPED
+func (p *Proc) WaitForExit(pids map[int]*os.Process, process *os.Process) {
+	_, _ = process.Wait()
+	p.status = PROCSTOPPED
+	delete(pids, p.pid)
 }
 
 // Start will exec the process it is called on
-func (p *Proc) Start(pids map[int]os.Process) (int, error) {
-	var newPid int
-	var defaultUmask int
-
-	if p.status != ProcStopped {
+func (p *Proc) Start(pids map[int]*os.Process) (int, error) {
+	if p.status != PROCSTOPPED {
 		return 0, errors.New("Error: Process not currently stopped")
 	}
-	defaultUmask = syscall.Umask(p.Umask)
-	// use os.Command instead?
-	// process, err := os.StartProcess(p.Args[0], p.Args, &os.ProcAttr{
-	// 	Dir:   p.WorkingDir,
-	// 	Env:   strings.Fields(p.EnvVars),
-	// 	Files: p.Redirections,
-	// })
+	defaultUmask := syscall.Umask(p.Umask)
+	process, err := os.StartProcess(p.Args[0], p.Args, &os.ProcAttr{
+		Dir:   p.WorkingDir,
+		Env:   p.EnvVars,
+		Files: p.Redirections,
+	})
+	if err != nil {
+		p.status = PROCSTOPPED
+		return 0, err
+	}
+	p.status = PROCRUNNING
+	p.pid = process.Pid
+	pids[p.pid] = process
 	syscall.Umask(defaultUmask)
-	return newPid, nil
+	go p.PerformStartCheckup()
+	go p.WaitForExit(pids, process)
+	return p.pid, nil
 }

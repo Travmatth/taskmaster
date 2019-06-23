@@ -63,11 +63,11 @@ or exit with error if incorrectly set
 func (p *Proc) ParseRestartPolicy(c *ProcConfig) {
 	switch strings.ToLower(c.RestartPolicy) {
 	case "always":
-		p.RestartPolicy = RestartAlways
+		p.RestartPolicy = RESTARTALWAYS
 	case "never":
-		p.RestartPolicy = RestartNever
+		p.RestartPolicy = RESTARTNEVER
 	case "unexpected":
-		p.RestartPolicy = RestartUnexpected
+		p.RestartPolicy = RESTARTUNEXPECTED
 	default:
 		fmt.Println("Error: Resart Policy must be one of: always | never | unexpected")
 		os.Exit(1)
@@ -95,16 +95,16 @@ func (p *Proc) ParseRedirections(c *ProcConfig) {
 	if c.Redirections.Stdin != "" {
 		f, err := os.OpenFile(c.Redirections.Stdin, os.O_RDONLY, 0777)
 		Check(err)
-		p.Redirections.Stdin = f
+		p.Redirections[0] = f
 	}
 	if c.Redirections.Stdout != "" {
 		f, err := os.OpenFile(c.Redirections.Stdout, os.O_WRONLY, 0777)
 		Check(err)
-		p.Redirections.Stdout = f
+		p.Redirections[1] = f
 	}
 	if c.Redirections.Stderr != "" {
 		f, err := os.OpenFile(c.Redirections.Stderr, os.O_WRONLY, 0777)
 		Check(err)
-		p.Redirections.Stderr = f
+		p.Redirections[2] = f
 	}
 }

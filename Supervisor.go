@@ -10,7 +10,7 @@ import (
 // Supervisor struct contains array of Proc structs
 type Supervisor struct {
 	procs map[int]Proc
-	pids  map[int]os.Process
+	pids  map[int]*os.Process
 }
 
 /*
