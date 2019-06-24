@@ -1,16 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 // Supervisor struct contains array of Proc structs
 type Supervisor struct {
-	procs     map[int]Proc
+	procs     map[int]*Proc
 	processes map[int]*os.Process
 }
 
@@ -19,64 +16,49 @@ DiffProcs identifies which processes are new and should be started,
 which processes are changed and should be stopped and restarted,
 and which processes are unchanged
 */
-func (s *Supervisor) DiffProcs(configProcs []Proc) ([]Proc, []Proc, []Proc) {
-	fmt.Println("DiffProcs Start")
+func (s *Supervisor) DiffProcs(configProcs []Proc) ([]Proc, []Proc) {
+	Log.Debug("DiffProcs Start")
 	newProcs := []Proc{}
-	sameProcs := []Proc{}
 	changedProcs := []Proc{}
 
 	for _, proc := range configProcs {
-		val, ok := s.procs[proc.ID]
+		_, ok := s.procs[proc.ID]
 		if ok == false {
-			fmt.Println("New proc detected")
+			Log.Debug("New proc detected")
 			newProcs = append(newProcs, proc)
-		} else if cmp.Equal(proc, s.procs[proc.ID]) {
-			fmt.Println("Same proc detected")
-			sameProcs = append(sameProcs, val)
 		} else {
-			fmt.Println("Changed proc detected")
+			Log.Debug("Changed proc detected")
 			changedProcs = append(changedProcs, proc)
 		}
 	}
-	fmt.Println("DiffProcs End")
-	return newProcs, sameProcs, changedProcs
+	Log.Debug("DiffProcs End")
+	return newProcs, changedProcs
 }
 
 // StartAll iterates through given processes, launching each
-func (s *Supervisor) StartAll(configProcs []Proc) {
-	fmt.Println("StartAll Start")
-	newProcs, sameProcs, changedProcs := s.DiffProcs(configProcs)
-	nextProcs := make(map[int]Proc)
-	for _, proc := range sameProcs {
-		nextProcs[proc.ID] = proc
-	}
+func (s *Supervisor) StartAll(configProcs []Proc, events chan ProcEvent, isLaunch bool) {
+	Log.Debug("StartAll Start")
+	newProcs, changedProcs := s.DiffProcs(configProcs)
 	for _, proc := range newProcs {
-		nextPid, err := proc.Start(s)
-		if err == nil {
-			nextProcs[nextPid] = proc
-		} else {
-			fmt.Println(err)
+		if isLaunch && proc.AtLaunch {
+			proc.Start(events)
+		} else if !isLaunch {
+			proc.Start(events)
 		}
 	}
 	for _, proc := range changedProcs {
-		nextPid, err := proc.Restart(s)
-		if err == nil {
-			nextProcs[nextPid] = proc
-		} else {
-			fmt.Print(err)
-		}
+		proc.Restart(events)
 	}
-	s.procs = nextProcs
-	fmt.Println("StartAll End")
+	Log.Debug("StartAll End")
 }
 
 // TestAll launches proc test - starts all proceses, then kills all processes
-func (s *Supervisor) TestAll(configProcs []Proc) {
-	fmt.Println("TestAll Start")
-	s.StartAll(configProcs)
+func (s *Supervisor) TestAll(configProcs []Proc, events chan ProcEvent) {
+	Log.Debug("TestAll Start")
+	s.StartAll(configProcs, events, true)
 	time.Sleep(time.Duration(5) * time.Second)
 	for _, p := range s.procs {
-		p.Kill(s)
+		p.Kill(events)
 	}
-	fmt.Println("TestAll End")
+	Log.Debug("TestAll End")
 }

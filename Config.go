@@ -5,8 +5,12 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/op/go-logging"
 	"gopkg.in/yaml.v2"
 )
+
+// Log struct to print leveled logs
+var Log *logging.Logger
 
 // Exit messages for the various parsing errors
 const (
@@ -94,11 +98,12 @@ func SetDefaults(configProcs []ProcConfig) []Proc {
 }
 
 // LoadConfig opens config file and parses yaml syntax into array of ProcConfig structs
-func LoadConfig(yamlFile string) []ProcConfig {
+func LoadConfig(args []string) ([]ProcConfig, error) {
 	configs := []ProcConfig{}
-	buf, err := ioutil.ReadFile(yamlFile)
-	Check(err)
-	err = yaml.Unmarshal(buf, &configs)
-	Check(err)
-	return configs
+	if buf, err := ioutil.ReadFile(args[0]); err != nil {
+		return nil, err
+	} else if err = yaml.Unmarshal(buf, &configs); err != nil {
+		return nil, err
+	}
+	return configs, NewLogger(args[1:])
 }

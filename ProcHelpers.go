@@ -1,25 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
 )
 
 // PerformStartCheckup called after process started, moves status: PROCSTART -> PROCRUNNING
-func (p *Proc) PerformStartCheckup(s *Supervisor, process *os.Process) {
-	timeout := time.Duration(p.StartCheckup) * time.Second
-	time.Sleep(timeout)
-	p.status = PROCRUNNING
-	p.start = time.Now()
-	fmt.Println("PerformStartCheckup ", p.ID, " is running ", p.status)
-	go p.WaitForExit(s, process)
+func (p *Proc) PerformStartCheckup(events chan ProcEvent, process *os.Process) {
+	Log.Debug("PerformStartCheckup start")
+	time.Sleep(time.Duration(p.StartCheckup) * time.Second)
+	events <- ProcEvent{SETPROCRUNNING, p}
+	Log.Debug("PerformStartCheckup end")
+	go p.WaitForExit(events, process)
 }
 
 // WaitForExit catches process exit, removes process processes map, moves status: PROCRUNNING -> PROCSTOPPED
-func (p *Proc) WaitForExit(s *Supervisor, process *os.Process) {
+func (p *Proc) WaitForExit(events chan ProcEvent, process *os.Process) {
+	Log.Debug("WaitForExit start")
 	_, _ = process.Wait()
-	p.status = PROCSTOPPED
-	delete(s.processes, p.pid)
-	fmt.Println("WaitForExit ", p.ID, " has stopped ", p.status)
+	events <- ProcEvent{SETPROCSTOPPED, p}
+	Log.Debug("WaitForExit end")
 }
