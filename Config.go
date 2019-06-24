@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Exit messages for the various parsing errors
 const (
 	EXPECTEDEXITMSG = "Error: expectedExit must be signal name found in `man signal`"
 	STOPSIGNALMSG   = "Error: stopSignal must be signal name found in `man signal`"

@@ -87,24 +87,28 @@ func (p *Proc) ParseSignal(c *ProcConfig, message string) syscall.Signal {
 	return syscall.Signal(0)
 }
 
+//OpenRedir opens the given file for use in process's redirections
+func (p *Proc) OpenRedir(val string, flag int) *os.File {
+	if val != "" {
+		f, err := os.OpenFile(val, flag, 0666)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+		return f
+	}
+	return nil
+}
+
 /*
 ParseRedirections parses the config struct to open the given filename and set *File member of
 Proc struct, raises runtime error if incorrectly set
 */
 func (p *Proc) ParseRedirections(c *ProcConfig) {
-	if c.Redirections.Stdin != "" {
-		f, err := os.OpenFile(c.Redirections.Stdin, os.O_RDONLY, 0777)
-		Check(err)
-		p.Redirections[0] = f
-	}
-	if c.Redirections.Stdout != "" {
-		f, err := os.OpenFile(c.Redirections.Stdout, os.O_WRONLY, 0777)
-		Check(err)
-		p.Redirections[1] = f
-	}
-	if c.Redirections.Stderr != "" {
-		f, err := os.OpenFile(c.Redirections.Stderr, os.O_WRONLY, 0777)
-		Check(err)
-		p.Redirections[2] = f
+	base := os.O_CREATE
+	p.Redirections = []*os.File{
+		p.OpenRedir(c.Redirections.Stdin, base|os.O_RDONLY),
+		p.OpenRedir(c.Redirections.Stdout, base|os.O_WRONLY|os.O_TRUNC),
+		p.OpenRedir(c.Redirections.Stderr, base|os.O_WRONLY|os.O_TRUNC),
 	}
 }

@@ -69,6 +69,7 @@ const (
 	SIGUSR2
 )
 
+//Signals maps signal names to syscall signals
 var Signals = map[string]syscall.Signal{
 	"SIGHUP":    syscall.Signal(SIGHUP),
 	"SIGINT":    syscall.Signal(SIGINT),
