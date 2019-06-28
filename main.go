@@ -19,17 +19,20 @@ func init() {
 	commands = make(map[int]func(pid int64))
 	commands[1] = func (int64){					//stop
 		fmt.Println("stop called")
+		time.Sleep(1000 * time.Millisecond)
 	}
 	commands[2] = func (int64){					//start
 		fmt.Println("start called")
+		time.Sleep(1000 * time.Millisecond)
 	}
 	commands[3] = func (int64){					//kill
 		fmt.Println("kill called")
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
 func clearwindow(){
-	cmd := exec.Command("clear") //function to run clear on mac
+	cmd := exec.Command("clear") //function to run clear on mac/linux
 	cmd.Stdout = os.Stdout
 	cmd.Run()
 }
@@ -53,15 +56,22 @@ func main(){
 		line, err := read.ReadString('\n')
 		
 		cmdNum, _ = strconv.Atoi(strings.TrimSuffix(line, "\n"))
-		fmt.Printf("%d\n", cmdNum)
-		time.Sleep(1000 * time.Millisecond)
+		// fmt.Printf("%d\n", cmdNum)
+		// time.Sleep(1000 * time.Millisecond)
 		if err != nil || !validInputCheck(cmdNum) {
 			fmt.Println("not a valid input")
 			time.Sleep(500 * time.Millisecond)
-		}
-		if cmdNum == 4{
+		} else if cmdNum == 4{
 			clearwindow()
 			break
+		} else {
+			clearwindow()
+			fmt.Printf("%-12v%-12v%-12v\n", "ID", "Command", "Status")
+			fmt.Print("Please enter a pid: ")
+			// line, err := read.ReadString('\n')
+			// check pid against vallid pids
+			command := commands
+			command[cmdNum](1/* actual pid goes here*/)
 		}
 	}
 }
