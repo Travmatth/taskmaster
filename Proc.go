@@ -34,28 +34,13 @@ type Proc struct {
 	StartCheckup  int
 	MaxRestarts   int
 	StopSignal    os.Signal
-	KillTimeout   int
+	StopTimeout   int
 	EnvVars       []string
 	WorkingDir    string
 	Umask         int
 	start         time.Time
 	pid           int
-	status        int
+	Status        int
 	Redirections  []*os.File
-}
-
-// Kill will immediately exit the given process if running, silently fail otherwise
-func (p *Proc) Kill(events chan ProcEvent) {
-	events <- ProcEvent{KILLPROC, p}
-}
-
-// Start will exec the process it is called on
-func (p *Proc) Start(events chan ProcEvent) {
-	events <- ProcEvent{STARTPROC, p}
-}
-
-// Restart will kill the currently running process with the given Pid,
-// and start again with new attributes
-func (p *Proc) Restart(events chan ProcEvent) {
-	events <- ProcEvent{RESTARTPROC, p}
+	end           chan bool
 }

@@ -1,31 +1,48 @@
-# an id to uniquely identify the process
-- id: 0
-# The command to use to launch the program
-  command: /bin/cat
-# The number of processes to start and keep running
+# # an id to uniquely identify the process
+# - id: 0
+# # The command to use to launch the program
+#   command: /bin/cat
+# # The number of processes to start and keep running
+#   instances: 1
+# # Whether to start this program at launch or not
+#   atLaunch: true
+# # Whether the program should be restarted always, never, or on unexpected exits only
+#   restartpolicy: always
+# # Which return codes represent an "expected" exit Status
+#   expectedexit: 0
+# # How long the program should be running after it’s started for it to be considered "successfully started"
+#   startcheckup: 1
+# # How many times a restart should be attempted before aborting
+#   maxrestarts: 0
+# # Which signal should be used to stop (i.e. exit gracefully) the program
+#   stopsignal: SIGINT
+# # How long to wait after a graceful stop before killing the program
+#   StopTimeout: 1
+# # Options to discard the program’s stdout/stderr or to redirect them to files
+#   redirections:
+#     stdin: ID0_in.test
+#     stdout: ID0_out.test
+#     stderr: ID0_err.test
+# # Environment variables to set before launching the program
+#   envvars:
+# # A working directory to set before launching the program
+#   workingdir:
+# # An umask to set before launching the program
+#   umask:
+- id: 1
+  command: /bin/sleep 9999
   instances: 1
-# Whether to start this program at launch or not
   atLaunch: true
-# Whether the program should be restarted always, never, or on unexpected exits only
   restartpolicy: always
-# Which return codes represent an "expected" exit status
   expectedexit: 0
-# How long the program should be running after it’s started for it to be considered "successfully started"
   startcheckup: 1
-# How many times a restart should be attempted before aborting
   maxrestarts: 0
-# Which signal should be used to stop (i.e. exit gracefully) the program
   stopsignal: SIGINT
-# How long to wait after a graceful stop before killing the program
-  killtimeout: 1
-# Options to discard the program’s stdout/stderr or to redirect them to files
+  StopTimeout: 2
   redirections:
-    stdin: ID0_in.test
-    stdout: ID0_out.test
-    stderr: ID0_err.test
-# Environment variables to set before launching the program
+    stdin:
+    stdout:
+    stderr:
   envvars:
-# A working directory to set before launching the program
   workingdir:
-# An umask to set before launching the program
   umask:

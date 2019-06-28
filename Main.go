@@ -6,18 +6,18 @@ import (
 )
 
 func main() {
-	var supervisor Supervisor
-	m := NewManager(&supervisor, make(chan ProcEvent))
+	channels := NewChannels()
+	s := NewSupervisor(channels)
+	m := NewManager(channels, s)
 
 	if l := len(os.Args); l < 3 {
-		fmt.Println("Usage: ./taskmaster <Config_File> <Log_File> [Log_level]\n")
+		fmt.Println("Usage: ./taskmaster <Config_File> <Log_File> [Log_level]")
 	} else if configProcs, err := LoadConfig(os.Args[1:]); err == nil {
 		newProcs := SetDefaults(configProcs)
-		supervisor.procs = make(map[int]*Proc)
-		supervisor.processes = make(map[int]*os.Process)
 		go m.ManageProcs()
-		supervisor.TestAll(newProcs, m.event)
+		s.TestAll(newProcs)
 	} else {
 		fmt.Println(err)
 	}
+	Log.Info("Exiting")
 }

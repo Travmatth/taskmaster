@@ -43,7 +43,7 @@ const (
 	SIGTSTP
 	//SIGCONT continue after stop
 	SIGCONT
-	//SIGCHLD child status has changed
+	//SIGCHLD child Status has changed
 	SIGCHLD
 	//SIGTTIN background read attempted from control terminal
 	SIGTTIN
@@ -61,7 +61,7 @@ const (
 	SIGPROF
 	//SIGWINCH Window size change
 	SIGWINCH
-	//SIGINFO status request from keyboard
+	//SIGINFO Status request from keyboard
 	SIGINFO
 	//SIGUSR1 User defined signal 1
 	SIGUSR1
