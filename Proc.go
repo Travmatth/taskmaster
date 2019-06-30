@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"sync"
 	"time"
 )
 
@@ -24,7 +25,7 @@ const (
 )
 
 // Proc structs track information of processes given in configuration
-type Proc struct {
+type Job struct {
 	ID            int
 	Args          []string
 	Instances     int
@@ -38,9 +39,11 @@ type Proc struct {
 	EnvVars       []string
 	WorkingDir    string
 	Umask         int
-	start         time.Time
-	pid           int
+	StartTime     time.Time
 	Status        int
 	Redirections  []*os.File
-	end           chan bool
+	Stopped       bool
+	process       *os.Process
+	mutex         sync.Mutex
+	condition     sync.Cond
 }

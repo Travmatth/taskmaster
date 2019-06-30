@@ -23,8 +23,8 @@ const (
 	UMASKMSG        = "Error: invalid umask value: %s\n"
 )
 
-// ProcConfig represents the config struct loaded from yaml
-type ProcConfig struct {
+// JobConfig represents the config struct loaded from yaml
+type JobConfig struct {
 	ID            string
 	Command       string
 	Instances     string
@@ -54,52 +54,53 @@ func Check(e error) {
 	}
 }
 
-// SetDefaults translate ProcConfig array into Proc array, verifying inputs and setting defaults
-func SetDefaults(configProcs []ProcConfig) []Proc {
+// SetDefaults translate JobConfig array into Job array, verifying inputs and setting defaults
+func SetDefaults(configJobs []JobConfig) []Job {
 	ids := make(map[int]bool)
-	procs := []Proc{}
+	Jobs := []Job{}
 	defaultUmask := syscall.Umask(0)
 
 	syscall.Umask(defaultUmask)
-	for _, cfg := range configProcs {
-		var proc Proc
-		// an id to uniquely identify the process
-		proc.ParseID(&cfg, ids)
+	for _, cfg := range configJobs {
+		var Job Job
+		// an id to uniquely identify the Jobess
+		Job.ParseID(&cfg, ids)
 		// The command to use to launch the program
-		proc.Args = strings.Fields(cfg.Command)
-		// The number of processes to start and keep running
-		proc.ParseInt(&cfg, "Instances", 1, INSTANCESMSG)
+		Job.Args = strings.Fields(cfg.Command)
+		// The number of Jobesses to start and keep running
+		Job.ParseInt(&cfg, "Instances", 1, INSTANCESMSG)
 		// Whether to start this program at launch or not
-		proc.ParseAtLaunch(&cfg)
+		Job.ParseAtLaunch(&cfg)
 		// Whether the program should be restarted always, never, or on unexpected exits only
-		proc.ParseRestartPolicy(&cfg)
+		Job.ParseRestartPolicy(&cfg)
 		// Which return codes represent an "expected" exit Status
-		proc.ParseInt(&cfg, "ExpectedExit", 0, EXPECTEDEXITMSG)
+		Job.ParseInt(&cfg, "ExpectedExit", 0, EXPECTEDEXITMSG)
 		// How long the program should be running after it’s started for it to be considered "successfully started"
-		proc.ParseInt(&cfg, "StartCheckup", 1, STARTCHECKUPMSG)
+		Job.ParseInt(&cfg, "StartCheckup", 1, STARTCHECKUPMSG)
 		// How many times a restart should be attempted before aborting
-		proc.ParseInt(&cfg, "MaxRestarts", 0, MAXRESTARTSMSG)
+		Job.ParseInt(&cfg, "MaxRestarts", 0, MAXRESTARTSMSG)
 		// Which signal should be used to stop (i.e. exit gracefully) the program
-		proc.StopSignal = proc.ParseSignal(&cfg, STOPSIGNALMSG)
+		Job.StopSignal = Job.ParseSignal(&cfg, STOPSIGNALMSG)
 		// How long to wait after a graceful stop before killing the program
-		proc.ParseInt(&cfg, "StopTimeout", 1, StopTimeoutMSG)
+		Job.ParseInt(&cfg, "StopTimeout", 1, StopTimeoutMSG)
 		// Options to discard the program’s stdout/stderr or to redirect them to files
-		proc.ParseRedirections(&cfg)
+		Job.ParseRedirections(&cfg)
 		// Environment variables to set before launching the program
-		proc.EnvVars = strings.Fields(cfg.EnvVars)
+		Job.EnvVars = strings.Fields(cfg.EnvVars)
 		// A working directory to set before launching the program
-		proc.WorkingDir = cfg.WorkingDir
+		Job.WorkingDir = cfg.WorkingDir
 		// An umask to set before launching the program
-		proc.ParseInt(&cfg, "Umask", defaultUmask, UMASKMSG)
-		// Add proc to array
-		procs = append(procs, proc)
+		Job.ParseInt(&cfg, "Umask", defaultUmask, UMASKMSG)
+		Job.end = make(chan bool)
+		// Add Job to array
+		Jobs = append(Jobs, Job)
 	}
-	return procs
+	return Jobs
 }
 
-// LoadConfig opens config file and parses yaml syntax into array of ProcConfig structs
-func LoadConfig(args []string) ([]ProcConfig, error) {
-	configs := []ProcConfig{}
+// LoadConfig opens config file and parses yaml syntax into array of JobConfig structs
+func LoadConfig(args []string) ([]JobConfig, error) {
+	configs := []JobConfig{}
 	if buf, err := ioutil.ReadFile(args[0]); err != nil {
 		return nil, err
 	} else if err = yaml.Unmarshal(buf, &configs); err != nil {
