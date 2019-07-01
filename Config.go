@@ -91,7 +91,6 @@ func SetDefaults(configJobs []JobConfig) []Job {
 		Job.WorkingDir = cfg.WorkingDir
 		// An umask to set before launching the program
 		Job.ParseInt(&cfg, "Umask", defaultUmask, UMASKMSG)
-		Job.end = make(chan bool)
 		// Add Job to array
 		Jobs = append(Jobs, Job)
 	}

@@ -11,10 +11,10 @@ import (
 )
 
 /*
-ParseID parses the config struct to set the Proc ID
+ParseID parses the config struct to set the Job ID
 or exit with error if incorrectly set
 */
-func (p *Proc) ParseID(c *ProcConfig, ids map[int]bool) {
+func (p *Job) ParseID(c *JobConfig, ids map[int]bool) {
 	if c.ID == "" {
 		fmt.Println("Error: ID must be specified")
 	} else if val, err := strconv.Atoi(c.ID); err != nil {
@@ -32,7 +32,7 @@ func (p *Proc) ParseID(c *ProcConfig, ids map[int]bool) {
 /*
 ParseInt uses https://golang.org/pkg/reflect/ to dynamically set struct member to integer
 */
-func (p *Proc) ParseInt(c *ProcConfig, member string, defaultVal int, message string) {
+func (p *Job) ParseInt(c *JobConfig, member string, defaultVal int, message string) {
 	cfgVal, _ := reflections.GetField(c, member)
 
 	if cfgVal == "" {
@@ -48,7 +48,7 @@ func (p *Proc) ParseInt(c *ProcConfig, member string, defaultVal int, message st
 /*
 ParseAtLaunch parses the config struct to set the at launch policy
 */
-func (p *Proc) ParseAtLaunch(c *ProcConfig) {
+func (p *Job) ParseAtLaunch(c *JobConfig) {
 	if c.AtLaunch == "" || strings.ToLower(c.AtLaunch) == "true" {
 		p.AtLaunch = true
 	} else {
@@ -60,7 +60,7 @@ func (p *Proc) ParseAtLaunch(c *ProcConfig) {
 ParseRestartPolicy parses the config struct to set the restart policy
 or exit with error if incorrectly set
 */
-func (p *Proc) ParseRestartPolicy(c *ProcConfig) {
+func (p *Job) ParseRestartPolicy(c *JobConfig) {
 	switch strings.ToLower(c.RestartPolicy) {
 	case "always":
 		p.RestartPolicy = RESTARTALWAYS
@@ -75,10 +75,10 @@ func (p *Proc) ParseRestartPolicy(c *ProcConfig) {
 }
 
 /*
-ParseSignal parses the config struct to set the signal of the given proc member
+ParseSignal parses the config struct to set the signal of the given Job member
 or exit with error if incorrectly set
 */
-func (p *Proc) ParseSignal(c *ProcConfig, message string) syscall.Signal {
+func (p *Job) ParseSignal(c *JobConfig, message string) syscall.Signal {
 	if sig, ok := Signals[strings.ToUpper(c.StopSignal)]; ok {
 		return sig
 	}
@@ -87,8 +87,8 @@ func (p *Proc) ParseSignal(c *ProcConfig, message string) syscall.Signal {
 	return syscall.Signal(0)
 }
 
-//OpenRedir opens the given file for use in process's redirections
-func (p *Proc) OpenRedir(val string, flag int) *os.File {
+//OpenRedir opens the given file for use in Jobess's redirections
+func (p *Job) OpenRedir(val string, flag int) *os.File {
 	if val != "" {
 		f, err := os.OpenFile(val, flag, 0666)
 		if err != nil {
@@ -102,9 +102,9 @@ func (p *Proc) OpenRedir(val string, flag int) *os.File {
 
 /*
 ParseRedirections parses the config struct to open the given filename and set *File member of
-Proc struct, raises runtime error if incorrectly set
+Job struct, raises runtime error if incorrectly set
 */
-func (p *Proc) ParseRedirections(c *ProcConfig) {
+func (p *Job) ParseRedirections(c *JobConfig) {
 	base := os.O_CREATE
 	p.Redirections = []*os.File{
 		p.OpenRedir(c.Redirections.Stdin, base|os.O_RDONLY),

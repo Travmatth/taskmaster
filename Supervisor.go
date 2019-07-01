@@ -7,14 +7,14 @@ import (
 
 // Supervisor struct contains array of Proc structs
 type Supervisor struct {
-	Jobs        map[int]*Job
-	PIDS        map[int]int
-	wg          sync.WaitGroup
-	errCh       chan error
-	finishedCh  chan struct{}
-	stopChan    chan Job
-	startChan   chan Job
-	restartChan chan Job
+	Jobs       map[int]*Job
+	PIDS       map[int]int
+	wg         sync.WaitGroup
+	errCh      chan error
+	finishedCh chan struct{}
+	stopCh     chan *Job
+	startCh    chan *Job
+	restartCh  chan *Job
 }
 
 func NewSupervisor() *Supervisor {
@@ -22,9 +22,9 @@ func NewSupervisor() *Supervisor {
 	s.Jobs = make(map[int]*Job)
 	s.PIDS = make(map[int]int)
 	s.finishedCh = make(chan struct{})
-	s.stopCh = make(chan Job)
-	s.startCh = make(chan Job)
-	s.restartCh = make(chan Job)
+	s.stopCh = make(chan *Job)
+	s.startCh = make(chan *Job)
+	s.restartCh = make(chan *Job)
 	return &s
 }
 
@@ -53,7 +53,7 @@ func (s *Supervisor) StopJob(job *Job) error {
 		timer := time.AfterFunc(time.Duration(job.StopTimeout)*time.Second, func() {
 			defer job.mutex.Unlock()
 			job.mutex.Lock()
-			if job.cmd != nil {
+			if job.process != nil {
 				err = s.KillJob(job)
 			}
 		})
@@ -64,20 +64,20 @@ func (s *Supervisor) StopJob(job *Job) error {
 }
 
 func (s *Supervisor) StopAllJobs() error {
-	for job := range s.Jobs {
+	for _, job := range s.Jobs {
 		s.StopJob(job)
 	}
 	return nil
 }
 
-func (s *Supervisor) StartAllJobs([]*Job) error {
-	for job := range jobs {
+func (s *Supervisor) StartAllJobs(jobs []*Job) error {
+	for _, job := range jobs {
 		s.StartJob(job)
 	}
 	go s.WaitForExit()
 	for {
 		select {
-		case job := <-s.stopChan:
+		case job := <-s.stopCh:
 			if err := s.StopJob(job); err != nil {
 				Log.Info("Error stopping job ", job.ID, ": ", err)
 			}

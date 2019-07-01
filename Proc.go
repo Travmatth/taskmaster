@@ -46,4 +46,5 @@ type Job struct {
 	process       *os.Process
 	mutex         sync.Mutex
 	condition     sync.Cond
+	state         *os.ProcessState
 }
