@@ -60,8 +60,8 @@ func (s *Supervisor) LaunchNewJob(job *Job) {
 	job.mutex.Unlock()
 }
 
-func (s *Supervisor) KillJob(pid int) error {
-	return syscall.Kill(-pid, Signals["SIGKILL"])
+func (s *Supervisor) KillJob(job *Job) error {
+	return syscall.Kill(-job.process.Pid, Signals["SIGKILL"])
 }
 
 func (s *Supervisor) StopProcessGroup(job *Job) error {
