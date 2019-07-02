@@ -6,14 +6,18 @@ import (
 )
 
 func main() {
-	s := NewSupervisor()
 	if l := len(os.Args); l < 3 {
 		fmt.Println("Usage: ./taskmaster <Config_File> <Log_File> [Log_level]")
-	} else if configProcs, err := LoadConfig(os.Args[1:]); err == nil {
-		newProcs := SetDefaults(configProcs)
-		s.TestAll(newProcs)
+	} else if buf, fileErr := LoadFile(os.Args[1]); fileErr != nil {
+		fmt.Println(fileErr)
+	} else if configProcs, configErr := LoadJobs(buf); configErr != nil {
+		fmt.Println(configErr)
+	} else if Log, logErr := NewLogger(os.Args[1:]); configErr != nil {
+		fmt.Println(logErr)
 	} else {
-		fmt.Println(err)
+		s := NewSupervisor(Log)
+		newJobs := SetDefaults(configProcs)
+		s.StartAllJobs(newJobs)
+		s.Log.Info("Exiting")
 	}
-	Log.Info("Exiting")
 }

@@ -45,6 +45,6 @@ type Job struct {
 	Stopped       bool
 	process       *os.Process
 	mutex         sync.Mutex
-	condition     sync.Cond
+	condition     *sync.Cond
 	state         *os.ProcessState
 }

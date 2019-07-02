@@ -7,6 +7,7 @@ import (
 
 func (s *Supervisor) WaitForExit() {
 	s.wg.Wait()
+	s.Log.Debug("StartAllJobs detected all jobs ended")
 	s.finishedCh <- struct{}{}
 }
 
@@ -38,7 +39,7 @@ func (s *Supervisor) LaunchNewJob(job *Job) {
 		Files: job.Redirections,
 	})
 	if err != nil {
-		Log.Info("Job ID", job.ID, " Failed to start with error: ", err)
+		s.Log.Info("Job ID", job.ID, " Failed to start with error: ", err)
 		return
 	}
 	job.Status = PROCSTART
@@ -50,17 +51,17 @@ func (s *Supervisor) LaunchNewJob(job *Job) {
 	job.condition.Broadcast()
 	job.mutex.Lock()
 	if err != nil && job.Stopped == false {
-		Log.Info("Job ID", job.ID, " Stopped with error: ", err)
+		// s.Log.Info("Job ID", job.ID, " Stopped with error: ", err)
 	} else {
-		Log.Info("Job ID", job.ID, " stopped")
+		// s.Log.Info("Job ID", job.ID, " stopped")
 	}
 	job.process = nil
 	s.wg.Done()
 	job.mutex.Unlock()
 }
 
-func (s *Supervisor) KillJob(job *Job) error {
-	return syscall.Kill(-job.process.Pid, Signals["SIGKILL"])
+func (s *Supervisor) KillJob(pid int) error {
+	return syscall.Kill(-pid, Signals["SIGKILL"])
 }
 
 func (s *Supervisor) StopProcessGroup(job *Job) error {
