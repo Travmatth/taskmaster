@@ -46,30 +46,31 @@ func (p *Job) ParseInt(c *JobConfig, member string, defaultVal int, message stri
 }
 
 /*
-ParseAtLaunch parses the config struct to set the at launch policy
+ParseatLaunch parses the config struct to set the at launch policy
 */
-func (p *Job) ParseAtLaunch(c *JobConfig) {
+func (j *Job) ParseAtLaunch(c *JobConfig) {
 	if c.AtLaunch == "" || strings.ToLower(c.AtLaunch) == "true" {
-		p.AtLaunch = true
+		j.AtLaunch = true
 	} else {
-		p.AtLaunch = false
+		j.AtLaunch = false
 	}
 }
 
 /*
-ParseRestartPolicy parses the config struct to set the restart policy
+ParserestartPolicy parses the config struct to set the restart policy
 or exit with error if incorrectly set
 */
-func (p *Job) ParseRestartPolicy(c *JobConfig) {
-	switch strings.ToLower(c.RestartPolicy) {
+func (p *Job) ParserestartPolicy(c *JobConfig) {
+	policy := strings.ToLower(c.RestartPolicy)
+	switch policy {
 	case "always":
-		p.RestartPolicy = RESTARTALWAYS
+		p.restartPolicy = RESTARTALWAYS
 	case "never":
-		p.RestartPolicy = RESTARTNEVER
+		p.restartPolicy = RESTARTNEVER
 	case "unexpected":
-		p.RestartPolicy = RESTARTUNEXPECTED
+		p.restartPolicy = RESTARTUNEXPECTED
 	default:
-		fmt.Println("Error: Resart Policy must be one of: always | never | unexpected")
+		fmt.Println("Error: Resart Policy must be one of: always | never | unexpected, recieved: ", c)
 		os.Exit(1)
 	}
 }
@@ -82,7 +83,6 @@ func (p *Job) ParseSignal(c *JobConfig, message string) syscall.Signal {
 	if sig, ok := Signals[strings.ToUpper(c.StopSignal)]; ok {
 		return sig
 	}
-	fmt.Println(message)
 	os.Exit(1)
 	return syscall.Signal(0)
 }

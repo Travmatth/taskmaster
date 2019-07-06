@@ -1,108 +1,70 @@
 package main
 
 import (
-	"fmt"
+	"reflect"
 	"sync"
-	"time"
 
 	"github.com/op/go-logging"
 )
 
-// Supervisor struct contains array of Proc structs and methods to communicate with them
 type Supervisor struct {
-	Jobs       map[int]*Job
-	PIDS       map[int]int
-	wg         sync.WaitGroup
-	errCh      chan error
-	finishedCh chan struct{}
-	stopCh     chan int
-	Log        *logging.Logger
+	Config  string
+	Log     *logging.Logger
+	Jobs    map[int]*Job
+	Mgr     *Manager
+	lock    sync.Mutex
+	restart bool
 }
 
-// NewSupervisor creates and returns new supervisor struct
-func NewSupervisor(log *logging.Logger) *Supervisor {
-	var s Supervisor
-	s.Jobs = make(map[int]*Job)
-	s.PIDS = make(map[int]int)
-	s.finishedCh = make(chan struct{})
-	s.stopCh = make(chan int)
-	s.Log = log
-	return &s
+func NewSupervisor(file string, log *logging.Logger, mgr *Manager) *Supervisor {
+	return &Supervisor{
+		Config: file,
+		Log:    log,
+		Mgr:    mgr,
+	}
 }
 
-// StopJob stops given job
-func (s *Supervisor) StopJob(id int) error {
-	var err error
-	job, ok := s.Jobs[id]
-	if !ok {
-		return fmt.Errorf("Attempting to stop unknown Job: %d", id)
-	}
-	defer job.mutex.Unlock()
-	job.mutex.Lock()
-	if job.process == nil {
-		return nil
-	}
-	job.Stopped = true
-	if err = s.StopProcessGroup(job); err != nil {
-		s.Log.Error("here")
-		return err
-	}
-	// https://github.com/golang/go/issues/9578
-	timer := time.AfterFunc(time.Duration(job.StopTimeout)*time.Second, func() {
-		defer job.mutex.Unlock()
-		job.mutex.Lock()
-		if job, ok := s.Jobs[job.ID]; ok && job.process != nil {
-			s.Log.Error("there")
-			err = s.KillJob(job)
+func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
+	defer s.lock.Unlock()
+	s.lock.Lock()
+	currentJobs, oldJobs, changedJobs, newJobs := []*Job{}, []*Job{}, []*Job{}, []*Job{}
+	for _, cfg := range jobs {
+		if job, ok := s.Jobs[cfg.ID]; !ok {
+			newJobs = append(newJobs, cfg)
+		} else if diff := reflect.DeepEqual(cfg.cfg, job.cfg); diff {
+			changedJobs = append(changedJobs, cfg)
+		} else {
+			currentJobs = append(currentJobs, cfg)
 		}
-	})
-	job.condition.Wait()
-	timer.Stop()
-	return err
-}
-
-// StopAllJobs attempts to stop all running jobs
-func (s *Supervisor) StopAllJobs() error {
+		s.Mgr.RemoveJob(cfg)
+	}
 	for _, job := range s.Jobs {
-		s.StopJob(job.ID)
+		oldJobs = append(oldJobs, job)
+		s.Mgr.RemoveJob(job)
 	}
-	return nil
+	return currentJobs, oldJobs, changedJobs, newJobs
 }
 
-// StartJob launches given job
-func (s *Supervisor) StartJob(job *Job) error {
-	job.mutex.Lock()
-	if job.process != nil {
-		job.mutex.Unlock()
-		s.Log.Debug("Job ", job.ID, " already started")
-		return nil
+func (s *Supervisor) Reload(jobs []*Job) error {
+	curr, old, changed, next := s.DiffJobs(jobs)
+	for _, job := range curr {
+		s.Mgr.AddJob(job)
 	}
-	s.wg.Add(1)
-	go s.LaunchNewJob(job)
-	s.Log.Debug("Finished StartJob")
-	return nil
-}
-
-// StartAllJobs starts given jobs and
-func (s *Supervisor) StartAllJobs(jobs []*Job) error {
-	s.Log.Debug("StartAllJobs, starting", len(jobs), "jobs(s)")
-	for _, job := range jobs {
-		s.Jobs[job.ID] = job
-		s.StartJob(job)
+	for _, job := range old {
+		job.Stop(false)
 	}
-	go s.WaitForExit()
-	for {
-		select {
-		case id := <-s.stopCh:
-			s.Log.Debug("Recieved stop message: Job", id)
-			if err := s.StopJob(id); err != nil {
-				s.Log.Info("Error stopping job ", id, ": ", err)
-			} else {
-				s.Log.Info("Stopped job ", id)
-			}
-			s.Log.Info("Stopped job end")
-		case <-s.finishedCh:
-			return nil
+	for _, job := range changed {
+		s.Mgr.RestartJob(job)
+	}
+	for _, job := range next {
+		s.Mgr.AddJob(job)
+		if job.AtLaunch {
+			s.Mgr.StartJob(job)
 		}
 	}
+	return nil
+}
+
+func (s *Supervisor) WaitForExit() {
+	s.Mgr.StopAllJobs()
 }

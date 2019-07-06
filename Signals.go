@@ -5,72 +5,77 @@ import (
 )
 
 const (
-	//SIGHUP terminal line hangup
-	SIGHUP int = iota + 1
-	//SIGINT interrupt program
+	// SIGEXISTS If sig is 0, then no signal is sent, but error checking is
+	// still performed; this can be used to check for the existence of a
+	// process ID or process group ID.
+	SIGEXISTS int = iota
+	// SIGHUP terminal line hangup
+	SIGHUP
+	// SIGINT interrupt program
 	SIGINT
-	//SIGQUIT quit program
+	// SIGQUIT quit program
 	SIGQUIT
-	//SIGILL illegal instruction
+	// SIGILL illegal instruction
 	SIGILL
-	//SIGTRAP trace trap
+	// SIGTRAP trace trap
 	SIGTRAP
-	//SIGABRT abort program (formerly SIGIOT)
+	// SIGABRT abort program (formerly SIGIOT)
 	SIGABRT
-	//SIGEMT emulate instruction executed
+	// SIGEMT emulate instruction executed
 	SIGEMT
-	//SIGFPE floating-point exception
+	// SIGFPE floating-point exception
 	SIGFPE
-	//SIGKILL kill program
+	// SIGKILL kill program
 	SIGKILL
-	//SIGBUS bus error
+	// SIGBUS bus error
 	SIGBUS
-	//SIGSEGV segmentation violation
+	// SIGSEGV segmentation violation
 	SIGSEGV
-	//SIGSYS non-existent system call invoked
+	// SIGSYS non-existent system call invoked
 	SIGSYS
-	//SIGPIPE write on a pipe with no reader
+	// SIGPIPE write on a pipe with no reader
 	SIGPIPE
-	//SIGALRM real-time timer expired
+	// SIGALRM real-time timer expired
 	SIGALRM
-	//SIGTERM software termination signal
+	// SIGTERM software termination signal
 	SIGTERM
-	//SIGURG urgent condition present on socket
+	// SIGURG urgent condition present on socket
 	SIGURG
-	//SIGSTOP stop (cannot be caught or ignored)
+	// SIGSTOP stop (cannot be caught or ignored)
 	SIGSTOP
-	//SIGTSTP stop signal generated from keyboard
+	// SIGTSTP stop signal generated from keyboard
 	SIGTSTP
-	//SIGCONT continue after stop
+	// SIGCONT continue after stop
 	SIGCONT
-	//SIGCHLD child Status has changed
+	// SIGCHLD child Status has changed
 	SIGCHLD
-	//SIGTTIN background read attempted from control terminal
+	// SIGTTIN background read attempted from control terminal
 	SIGTTIN
-	//SIGTTOU background write attempted to control terminal
+	// SIGTTOU background write attempted to control terminal
 	SIGTTOU
-	//SIGIO I/O is possible on a descriptor (see fcntl(2))
+	// SIGIO I/O is possible on a descriptor (see fcntl(2))
 	SIGIO
-	//SIGXCPU cpu time limit exceeded (see setrlimit(2))
+	// SIGXCPU cpu time limit exceeded (see setrlimit(2))
 	SIGXCPU
-	//SIGXFSZ file size limit exceeded (see setrlimit(2))
+	// SIGXFSZ file size limit exceeded (see setrlimit(2))
 	SIGXFSZ
-	//SIGVTALRM virtual time alarm (see setitimer(2))
+	// SIGVTALRM virtual time alarm (see setitimer(2))
 	SIGVTALRM
-	//SIGPROF profiling timer alarm (see setitimer(2))
+	// SIGPROF profiling timer alarm (see setitimer(2))
 	SIGPROF
-	//SIGWINCH Window size change
+	// SIGWINCH Window size change
 	SIGWINCH
-	//SIGINFO Status request from keyboard
+	// SIGINFO Status request from keyboard
 	SIGINFO
-	//SIGUSR1 User defined signal 1
+	// SIGUSR1 User defined signal 1
 	SIGUSR1
-	//SIGUSR2 User defined signal 2
+	// SIGUSR2 User defined signal 2
 	SIGUSR2
 )
 
-//Signals maps signal names to syscall signals
+// Signals maps signal names to syscall signals
 var Signals = map[string]syscall.Signal{
+	"SIGEXISTS": syscall.Signal(SIGEXISTS),
 	"SIGHUP":    syscall.Signal(SIGHUP),
 	"SIGINT":    syscall.Signal(SIGINT),
 	"SIGQUIT":   syscall.Signal(SIGQUIT),

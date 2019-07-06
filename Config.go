@@ -2,9 +2,12 @@ package main
 
 import (
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/op/go-logging"
 
 	"gopkg.in/yaml.v2"
 )
@@ -22,25 +25,23 @@ const (
 
 // JobConfig represents the config struct loaded from yaml
 type JobConfig struct {
-	ID            string
-	Command       string
-	Instances     string
-	AtLaunch      string
-	RestartPolicy string
-	ExpectedExit  string
-	StartCheckup  string
-	MaxRestarts   string
-	StopSignal    string
-	StopTimeout   string
-	EnvVars       string
-	WorkingDir    string
-	Umask         string
-	pid           string
-	Status        string
+	ID            string `json:"ID"`
+	Command       string `json:"Command"`
+	Instances     string `json:"Instances"`
+	AtLaunch      string `json:"AtLaunch"`
+	RestartPolicy string `json:"RestartPolicy"`
+	ExpectedExit  string `json:"ExpectedExit"`
+	StartCheckup  string `json:"StartCheckup"`
+	MaxRestarts   string `json:"MaxRestarts"`
+	StopSignal    string `json:"StopSignal"`
+	StopTimeout   string `json:"StopTimeout"`
+	EnvVars       string `json:"EnvVars"`
+	WorkingDir    string `json:"WorkingDir"`
+	Umask         string `json:"Umask"`
 	Redirections  struct {
-		Stdin  string
-		Stdout string
-		Stderr string
+		Stdin  string `json:"Stdin"`
+		Stdout string `json:"Stdout"`
+		Stderr string `json:"Stderr"`
 	}
 }
 
@@ -51,47 +52,62 @@ func Check(e error) {
 	}
 }
 
+func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int, log *logging.Logger) *Job {
+	// an id to uniquely identify the Jobess
+	job.ParseID(cfg, ids)
+	// The command to use to launch the program
+	job.args = strings.Fields(cfg.Command)
+	// The number of Jobesses to start and keep running
+	job.ParseInt(cfg, "Instances", 1, INSTANCESMSG)
+	// Whether to start this program at launch or not
+	job.ParseAtLaunch(cfg)
+	// Whether the program should be restarted always, never, or on unexpected exits only
+	job.ParserestartPolicy(cfg)
+	// Which return codes represent an "expected" exit Status
+	job.ParseInt(cfg, "ExpectedExit", 0, EXPECTEDEXITMSG)
+	// How long the program should be running after it’s started for it to be considered "successfully started"
+	job.ParseInt(cfg, "StartCheckup", 1, STARTCHECKUPMSG)
+	// How many times a restart should be attempted before aborting
+	// job.ParseInt(cfg, "MaxRestarts", 0, MAXRESTARTSMSG)
+	max, _ := strconv.Atoi(cfg.MaxRestarts)
+	next := int32(max)
+	job.MaxRestarts = &next
+	// Which signal should be used to stop (i.e. exit gracefully) the program
+	job.StopSignal = job.ParseSignal(cfg, STOPSIGNALMSG)
+	// How long to wait after a graceful stop before killing the program
+	job.ParseInt(cfg, "StopTimeout", 1, STOPTIMEOUTMSG)
+	// Options to discard the program’s stdout/stderr or to redirect them to files
+	job.ParseRedirections(cfg)
+	// Environment variables to set before launching the program
+	job.EnvVars = strings.Fields(cfg.EnvVars)
+	// A working directory to set before launching the program
+	job.WorkingDir = cfg.WorkingDir
+	// An umask to set before launching the program
+	job.ParseInt(cfg, "Umask", defaultUmask, UMASKMSG)
+	// Add conditional var to struct
+	job.condition = sync.NewCond(&job.mutex)
+	// Add logging module to job
+	job.Log = log
+	// Add config to job struct
+	job.cfg = cfg
+	return job
+}
+
+func GetDefaultUmask() int {
+	defaultUmask := syscall.Umask(0)
+	syscall.Umask(defaultUmask)
+	return defaultUmask
+}
+
 // SetDefaults translate JobConfig array into Job array, verifying inputs and setting defaults
-func SetDefaults(configJobs []JobConfig) []*Job {
+func SetDefaults(configJobs []JobConfig, log *logging.Logger) []*Job {
 	ids := make(map[int]bool)
 	Jobs := []*Job{}
-	defaultUmask := syscall.Umask(0)
+	umask := GetDefaultUmask()
 
-	syscall.Umask(defaultUmask)
 	for _, cfg := range configJobs {
 		var job Job
-		// an id to uniquely identify the Jobess
-		job.ParseID(&cfg, ids)
-		// The command to use to launch the program
-		job.Args = strings.Fields(cfg.Command)
-		// The number of Jobesses to start and keep running
-		job.ParseInt(&cfg, "Instances", 1, INSTANCESMSG)
-		// Whether to start this program at launch or not
-		job.ParseAtLaunch(&cfg)
-		// Whether the program should be restarted always, never, or on unexpected exits only
-		job.ParseRestartPolicy(&cfg)
-		// Which return codes represent an "expected" exit Status
-		job.ParseInt(&cfg, "ExpectedExit", 0, EXPECTEDEXITMSG)
-		// How long the program should be running after it’s started for it to be considered "successfully started"
-		job.ParseInt(&cfg, "StartCheckup", 1, STARTCHECKUPMSG)
-		// How many times a restart should be attempted before aborting
-		job.ParseInt(&cfg, "MaxRestarts", 0, MAXRESTARTSMSG)
-		// Which signal should be used to stop (i.e. exit gracefully) the program
-		job.StopSignal = job.ParseSignal(&cfg, STOPSIGNALMSG)
-		// How long to wait after a graceful stop before killing the program
-		job.ParseInt(&cfg, "StopTimeout", 1, STOPTIMEOUTMSG)
-		// Options to discard the program’s stdout/stderr or to redirect them to files
-		job.ParseRedirections(&cfg)
-		// Environment variables to set before launching the program
-		job.EnvVars = strings.Fields(cfg.EnvVars)
-		// A working directory to set before launching the program
-		job.WorkingDir = cfg.WorkingDir
-		// An umask to set before launching the program
-		job.ParseInt(&cfg, "Umask", defaultUmask, UMASKMSG)
-		// Add conditional var to struct
-		job.condition = sync.NewCond(&job.mutex)
-		// Add Job to array
-		Jobs = append(Jobs, &job)
+		Jobs = append(Jobs, SetDefault(&cfg, &job, ids, umask, log))
 	}
 	return Jobs
 }

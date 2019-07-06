@@ -10,26 +10,24 @@ import (
 	"github.com/op/go-logging"
 )
 
-var s *Supervisor
 var buf bytes.Buffer
+var Log *logging.Logger
 
-func mockLogger() (*logging.Logger, error) {
+func mockLogger() {
 	loggingBackend := logging.NewBackendFormatter(
 		logging.NewLogBackend(&buf, "", 0),
 		logging.MustStringFormatter(
 			`[%{time:2006-01-02 15:04:05}] [%{level:.4s}] [%{shortfile}] - %{message}`,
 		))
-	Log, err := logging.GetLogger("taskmaster")
+	Log, _ = logging.GetLogger("taskmaster")
 	leveledBackend := logging.AddModuleLevel(loggingBackend)
 	leveledBackend.SetLevel(logging.DEBUG, "")
 	Log.SetBackend(leveledBackend)
-	return Log, err
 }
 
-func parseProcs(buf []byte, t *testing.T) []*Job {
-	t.Helper()
-	configProcs, _ := LoadJobs(buf)
-	return SetDefaults(configProcs)
+func parseJobs(buf []byte, t *testing.T) []*Job {
+	configs, _ := LoadJobs(buf)
+	return SetDefaults(configs, Log)
 }
 
 func init() {
@@ -37,13 +35,11 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	Log, _ := mockLogger()
-	s = NewSupervisor(Log)
+	mockLogger()
 	os.Exit(m.Run())
 }
 
 func TestStopSingle(t *testing.T) {
-	timeoutCh, funcCh := make(chan bool), make(chan bool)
 	var file = []byte(`
 - id: 1
   command: /bin/sleep 9999
@@ -63,25 +59,20 @@ func TestStopSingle(t *testing.T) {
   workingdir:
   umask:
 `)
-	jobs := parseProcs(file, t)
-	go func() {
-		finished := make(chan struct{})
-		go func() {
-			s.StartAllJobs(jobs)
-			finished <- struct{}{}
-		}()
-		s.stopCh <- 1
-		<-finished
-		funcCh <- true
-	}()
-	go func() {
-		time.Sleep(time.Duration(5) * time.Second)
-		timeoutCh <- true
-	}()
-	select {
-	case <-funcCh:
-		fmt.Println("TestStopSingle:\n", buf.String())
-	case <-timeoutCh:
-		t.Errorf(fmt.Sprintf("Timeout failed:\n%s", buf.String()))
+	s := NewSupervisor("", Log, NewManager(Log))
+	jobs := parseJobs(file, t)
+	s.Reload(jobs)
+	s.lock.Lock()
+	if p, ok := s.Mgr.Jobs[1]; !ok {
+		s.Log.Debug("PID not available")
+	} else if p.process == nil {
+		s.Log.Debug("process not available")
+	} else {
+		s.Log.Debug("PID:", p.process.Pid)
 	}
+	s.lock.Unlock()
+	time.Sleep(5)
+	s.WaitForExit()
+	time.Sleep(5)
+	fmt.Println(buf.String())
 }
