@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
-
-	"github.com/op/go-logging"
 )
 
 const (
@@ -40,7 +38,8 @@ type Job struct {
 	restartPolicy int
 	ExpectedExit  os.Signal
 	StartCheckup  int
-	MaxRestarts   *int32
+	Restarts      *int32
+	MaxRestarts   int32
 	StopSignal    os.Signal
 	StopTimeout   int
 	EnvVars       []string
@@ -56,12 +55,11 @@ type Job struct {
 	condition     *sync.Cond
 	state         *os.ProcessState
 	cfg           *JobConfig
-	Log           *logging.Logger
 	starting      bool
+	finishedCh    chan struct{}
 }
 
 func (j *Job) Start(wait bool) {
-	fmt.Println("Attempting to start job", j.ID)
 	j.mutex.Lock()
 	if j.starting {
 		j.mutex.Unlock()
@@ -76,15 +74,12 @@ func (j *Job) Start(wait bool) {
 		cond = sync.NewCond(&sync.Mutex{})
 		cond.L.Lock()
 	}
-	// ch := make(chan struct{})
 	go func() {
-		fmt.Println("Job", j.ID, "Run callback()")
 		for {
 			if wait {
 				cond.L.Lock()
 			}
 			j.Run(func() {
-				// ch <- struct{}{}
 				done = true
 				if wait {
 					cond.L.Unlock()
@@ -92,10 +87,10 @@ func (j *Job) Start(wait bool) {
 				}
 			})
 			if j.Stopped {
-				j.Log.Debug("Job", j.ID, "stopped by user, not restarting")
+				Log.Info("Job", j.ID, "stopped by user, not restarting")
 				break
 			} else if j.restartPolicy != RESTARTALWAYS {
-				j.Log.Debug("Job", j.ID, "restart policy specifies do not restart")
+				Log.Info("Job", j.ID, "restart policy specifies do not restart")
 				break
 			}
 		}
@@ -103,8 +98,6 @@ func (j *Job) Start(wait bool) {
 		j.starting = false
 		j.mutex.Unlock()
 	}()
-	// <-ch
-	fmt.Println("Job", j.ID, "post callback()")
 	if wait && !done {
 		cond.Wait()
 		cond.L.Unlock()
@@ -114,13 +107,13 @@ func (j *Job) Start(wait bool) {
 func (j *Job) Run(callback func()) {
 	defer j.mutex.Unlock()
 	j.mutex.Lock()
-	fmt.Println("Run called on Job", j.ID)
 	if j.PIDExists() {
-		j.Log.Info("Job", j.ID, "is already running")
+		Log.Info("Job", j.ID, "is already running")
 		callback()
 		return
 	}
 	j.StartTime = time.Now()
+	atomic.StoreInt32(j.Restarts, 0)
 	var once sync.Once
 	callbackWrapper := func() {
 		once.Do(callback)
@@ -128,22 +121,22 @@ func (j *Job) Run(callback func()) {
 	for !j.Stopped {
 		end := time.Now().Add(time.Duration(j.StartCheckup) * time.Second)
 		j.ChangeStatus(PROCSTART)
-		atomic.AddInt32(j.MaxRestarts, -1)
-		err := j.CreateJob()
-		if err != nil {
-			if atomic.LoadInt32(j.MaxRestarts) <= 0 {
+		atomic.AddInt32(j.Restarts, 1)
+		if err := j.CreateJob(); err != nil {
+			if atomic.LoadInt32(j.Restarts) >= j.MaxRestarts {
 				errStr := fmt.Sprintf("Job %d failed to start after retries with error: %s", j.ID, err)
 				j.JobCreateFailure(callback, errStr)
 				break
 			} else {
-				j.Log.Info("Job", j.ID, "failed to start with error:", err)
+				Log.Info("Job", j.ID, "failed to start with error:", err)
+				j.ChangeStatus(PROCBACKOFF)
 				continue
 			}
 		}
 		monitorExited := int32(0)
 		programExited := int32(0)
 		if j.StartCheckup <= 0 {
-			j.Log.Info("Job", j.ID, "Successfully Started")
+			Log.Info("Job", j.ID, "Successfully Started")
 			j.ChangeStatus(PROCRUNNING)
 			go callbackWrapper()
 		} else {
@@ -152,18 +145,20 @@ func (j *Job) Run(callback func()) {
 				callbackWrapper()
 			}()
 		}
-		fmt.Println("Job", j.ID, "waiting for program exit")
 		j.mutex.Unlock()
 		j.WaitForExit()
+		atomic.StoreInt32(&programExited, 1)
+		for atomic.LoadInt32(&monitorExited) == 0 {
+			time.Sleep(time.Duration(10) * time.Millisecond)
+		}
 		j.mutex.Lock()
 		if j.Status == PROCRUNNING {
 			j.ChangeStatus(PROCEXITED)
-			j.Log.Info("Job", j.ID, "stopped")
 			break
 		} else {
 			j.ChangeStatus(PROCBACKOFF)
 		}
-		if atomic.LoadInt32(j.MaxRestarts) <= 0 {
+		if atomic.LoadInt32(j.Restarts) >= j.MaxRestarts {
 			j.JobCreateFailure(callback, fmt.Sprintf("Failed to start Job %d maximum retries reached", j.ID))
 			break
 		}
@@ -172,20 +167,21 @@ func (j *Job) Run(callback func()) {
 
 //WaitForExit waits for os.Process exit and saves returned ProcessState
 func (j *Job) WaitForExit() {
-	fmt.Println("Waiting for job", j.ID, "exit")
 	state, err := j.process.Wait()
-	fmt.Println("Waiting for job", j.ID, "exit completed")
 	if err != nil {
-		j.Log.Info("Job", j.ID, "error waiting for exit: ", err)
+		Log.Info("Job", j.ID, "error waiting for exit: ", err)
 	} else if state != nil {
-		j.Log.Info("Job", j.ID, "stopped with status:", state)
-	} else {
-		j.Log.Info("Job", j.ID, "stopped")
+		Log.Info("Job", j.ID, "stopped with status:", state)
 	}
-	defer j.mutex.Unlock()
 	j.mutex.Lock()
 	j.state = state
 	j.StopTime = time.Now()
+	j.mutex.Unlock()
+	j.finishedCh <- struct{}{}
+	// select {
+	// case j.finishedCh <- struct{}{}:
+	// default:
+	// }
 }
 
 //PIDExists check the existence of given process
@@ -211,6 +207,7 @@ func (j *Job) CreateJob() error {
 	if err != nil {
 		return err
 	}
+	Log.Info("Job", j.ID, "started")
 	syscall.Umask(defaultUmask)
 	j.process = process
 	return nil
@@ -218,7 +215,7 @@ func (j *Job) CreateJob() error {
 
 //JobCreateFailure registers the failure of attempt to create job
 func (j *Job) JobCreateFailure(callback func(), errStr string) {
-	j.Log.Info("Creation of Job", j.ID, "failed:", errStr)
+	Log.Info("Creation of Job", j.ID, "failed:", errStr)
 	callback()
 }
 
@@ -231,8 +228,7 @@ func (j *Job) MonitorProgramRunning(end time.Time, monitor *int32, program *int3
 	defer j.mutex.Unlock()
 	j.mutex.Lock()
 	if atomic.LoadInt32(program) == 0 && j.Status == PROCSTART {
-		fmt.Println("Job", j.ID, "started")
-		j.Log.Info("Job", j.ID, "started")
+		j.Status = PROCRUNNING
 	}
 }
 
@@ -243,30 +239,42 @@ func (j *Job) ChangeStatus(state int) {
 // Need to expand signal sending to -pid, target all in process group
 func (j *Job) Stop(wait bool) {
 	j.mutex.Lock()
-	fmt.Println("Setting job", j.ID, "to stopped")
 	j.Stopped = true
 	j.mutex.Unlock()
 	go func() {
-		stopped := false
-		j.mutex.Lock()
+		// stopped := false
+		j.mutex.RLock()
 		if j.process != nil {
-			fmt.Println("Sending stop sig to job", j.ID)
+			Log.Info("Sending Signal", j.StopSignal, "to Job", j.ID)
 			j.process.Signal(j.StopSignal)
 		}
-		j.mutex.Unlock()
-		for time.Now().Add(time.Duration(j.StopTimeout) * time.Second).After(time.Now()) {
-			if j.Status != PROCSTART && j.Status != PROCRUNNING && j.Status != PROCSTOPPING {
-				j.Log.Info("Job", j.ID, "Stopped Successfully")
-				stopped = true
-				break
-			}
-			time.Sleep(1 * time.Second)
-		}
-		if !stopped {
-			j.Log.Info("Job", j.ID, "did not stop, SIGKILL issued")
+		j.mutex.RUnlock()
+		// end := time.Now().Add(time.Duration(j.StopTimeout) * time.Second)
+		// for end.After(time.Now()) {
+		// 	if j.Status != PROCSTART && j.Status != PROCRUNNING && j.Status != PROCSTOPPING {
+		// 		Log.Info("Job", j.ID, "Stopped Successfully")
+		// 		stopped = true
+		// 		break
+		// 	}
+		// 	time.Sleep(1 * time.Second)
+		// }
+		// if !stopped {
+		// 	Log.Info("Job", j.ID, "did not stop, SIGKILL issued")
+		// 	if j.process != nil {
+		// 		j.process.Signal(Signals["SIGKILL"])
+		// 	}
+		// }
+		select {
+		case <-time.After(time.Duration(j.StopTimeout) * time.Second):
+			Log.Info("Job", j.ID, "did not stop after timeout of ", j.StopTimeout, "seconds SIGKILL issued")
 			if j.process != nil {
 				j.process.Signal(Signals["SIGKILL"])
+				<-j.finishedCh
 			}
+			break
+		case <-j.finishedCh:
+			Log.Info("Job", j.ID, "receieved stopping signal")
+			break
 		}
 	}()
 	if wait {

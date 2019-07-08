@@ -3,26 +3,20 @@ package main
 import (
 	"fmt"
 	"sync"
-
-	"github.com/op/go-logging"
 )
 
 type Manager struct {
 	Jobs map[int]*Job
 	lock sync.Mutex
-	Log  *logging.Logger
 }
 
-func NewManager(log *logging.Logger) *Manager {
+func NewManager() *Manager {
 	return &Manager{
 		Jobs: make(map[int]*Job),
-		Log:  log,
 	}
 }
 
 func (m *Manager) AddJob(job *Job) {
-	defer m.lock.Unlock()
-	m.lock.Lock()
 	m.Jobs[job.ID] = job
 }
 

@@ -7,8 +7,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/op/go-logging"
-
 	"gopkg.in/yaml.v2"
 )
 
@@ -52,7 +50,7 @@ func Check(e error) {
 	}
 }
 
-func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int, log *logging.Logger) *Job {
+func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *Job {
 	// an id to uniquely identify the Jobess
 	job.ParseID(cfg, ids)
 	// The command to use to launch the program
@@ -69,13 +67,21 @@ func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int, lo
 	job.ParseInt(cfg, "StartCheckup", 1, STARTCHECKUPMSG)
 	// How many times a restart should be attempted before aborting
 	// job.ParseInt(cfg, "MaxRestarts", 0, MAXRESTARTSMSG)
-	max, _ := strconv.Atoi(cfg.MaxRestarts)
-	next := int32(max)
-	job.MaxRestarts = &next
+	if max, err := strconv.Atoi(cfg.MaxRestarts); err == nil {
+		job.MaxRestarts = int32(max)
+	} else {
+		job.MaxRestarts = 0
+	}
+	job.Restarts = new(int32)
 	// Which signal should be used to stop (i.e. exit gracefully) the program
 	job.StopSignal = job.ParseSignal(cfg, STOPSIGNALMSG)
 	// How long to wait after a graceful stop before killing the program
-	job.ParseInt(cfg, "StopTimeout", 1, STOPTIMEOUTMSG)
+	// job.ParseInt(cfg, "StopTimeout", 1, STOPTIMEOUTMSG)
+	if timeout, err := strconv.Atoi(cfg.StopTimeout); err == nil {
+		job.StopTimeout = timeout
+	} else {
+		job.StopTimeout = 5
+	}
 	// Options to discard the program’s stdout/stderr or to redirect them to files
 	job.ParseRedirections(cfg)
 	// Environment variables to set before launching the program
@@ -86,8 +92,7 @@ func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int, lo
 	job.ParseInt(cfg, "Umask", defaultUmask, UMASKMSG)
 	// Add conditional var to struct
 	job.condition = sync.NewCond(&job.mutex)
-	// Add logging module to job
-	job.Log = log
+	job.finishedCh = make(chan struct{})
 	// Add config to job struct
 	job.cfg = cfg
 	return job
@@ -100,14 +105,14 @@ func GetDefaultUmask() int {
 }
 
 // SetDefaults translate JobConfig array into Job array, verifying inputs and setting defaults
-func SetDefaults(configJobs []JobConfig, log *logging.Logger) []*Job {
+func SetDefaults(configJobs []JobConfig) []*Job {
 	ids := make(map[int]bool)
 	Jobs := []*Job{}
 	umask := GetDefaultUmask()
 
 	for _, cfg := range configJobs {
 		var job Job
-		Jobs = append(Jobs, SetDefault(&cfg, &job, ids, umask, log))
+		Jobs = append(Jobs, SetDefault(&cfg, &job, ids, umask))
 	}
 	return Jobs
 }

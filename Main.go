@@ -3,7 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/op/go-logging"
 )
+
+var Log *logging.Logger
 
 func run(s *Supervisor, newJobs []*Job) {
 	for {
@@ -22,12 +26,12 @@ func main() {
 		fmt.Println(fileErr)
 	} else if jobConfigs, configErr := LoadJobs(buf); configErr != nil {
 		fmt.Println(configErr)
-	} else if Log, logErr := NewLogger(os.Args[1:]); configErr != nil {
+	} else if logErr := NewLogger(os.Args[1:]); logErr != nil {
 		fmt.Println(logErr)
 	} else {
-		s := NewSupervisor(os.Args[1], Log, NewManager(Log))
-		newJobs := SetDefaults(jobConfigs, s.Log)
+		s := NewSupervisor(os.Args[1], NewManager())
+		newJobs := SetDefaults(jobConfigs)
 		run(s, newJobs)
-		s.Log.Info("Exiting")
+		Log.Info("Exiting")
 	}
 }

@@ -3,23 +3,19 @@ package main
 import (
 	"reflect"
 	"sync"
-
-	"github.com/op/go-logging"
 )
 
 type Supervisor struct {
 	Config  string
-	Log     *logging.Logger
 	Jobs    map[int]*Job
 	Mgr     *Manager
 	lock    sync.Mutex
 	restart bool
 }
 
-func NewSupervisor(file string, log *logging.Logger, mgr *Manager) *Supervisor {
+func NewSupervisor(file string, mgr *Manager) *Supervisor {
 	return &Supervisor{
 		Config: file,
-		Log:    log,
 		Mgr:    mgr,
 	}
 }
@@ -46,6 +42,8 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 }
 
 func (s *Supervisor) Reload(jobs []*Job) error {
+	defer s.Mgr.lock.Unlock()
+	s.Mgr.lock.Lock()
 	curr, old, changed, next := s.DiffJobs(jobs)
 	for _, job := range curr {
 		s.Mgr.AddJob(job)
@@ -67,4 +65,36 @@ func (s *Supervisor) Reload(jobs []*Job) error {
 
 func (s *Supervisor) WaitForExit() {
 	s.Mgr.StopAllJobs()
+}
+
+func (s *Supervisor) StartAllJobs() {
+	ch := make(chan *Job)
+	s.Mgr.lock.Lock()
+	n := len(s.Mgr.Jobs)
+	for _, job := range s.Mgr.Jobs {
+		go func(job *Job) {
+			job.Start(true)
+			ch <- job
+		}(job)
+	}
+	for i := 0; i < n; i++ {
+		<-ch
+	}
+	s.Mgr.lock.Unlock()
+}
+
+func (s *Supervisor) StopAllJobs() {
+	ch := make(chan *Job)
+	s.Mgr.lock.Lock()
+	n := len(s.Mgr.Jobs)
+	for _, job := range s.Mgr.Jobs {
+		go func(job *Job) {
+			job.Stop(true)
+			ch <- job
+		}(job)
+	}
+	for i := 0; i < n; i++ {
+		<-ch
+	}
+	s.Mgr.lock.Unlock()
 }

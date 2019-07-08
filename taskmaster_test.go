@@ -1,21 +1,18 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/op/go-logging"
 )
 
-var buf bytes.Buffer
-var Log *logging.Logger
+// var buf bytes.Buffer
 
 func mockLogger() {
 	loggingBackend := logging.NewBackendFormatter(
-		logging.NewLogBackend(&buf, "", 0),
+		// logging.NewLogBackend(&buf, "", 0),
+		logging.NewLogBackend(os.Stderr, "", 0),
 		logging.MustStringFormatter(
 			`[%{time:2006-01-02 15:04:05}] [%{level:.4s}] [%{shortfile}] - %{message}`,
 		))
@@ -27,11 +24,11 @@ func mockLogger() {
 
 func parseJobs(buf []byte, t *testing.T) []*Job {
 	configs, _ := LoadJobs(buf)
-	return SetDefaults(configs, Log)
+	return SetDefaults(configs)
 }
 
 func init() {
-	buf.Reset()
+	// buf.Reset()
 }
 
 func TestMain(m *testing.M) {
@@ -50,7 +47,7 @@ func TestStopSingle(t *testing.T) {
   startcheckup: 1
   maxrestarts: 0
   stopsignal: SIGINT
-  StopTimeout: 10
+  stoptimeout: 0 
   redirections:
     stdin:
     stdout:
@@ -59,20 +56,24 @@ func TestStopSingle(t *testing.T) {
   workingdir:
   umask:
 `)
-	s := NewSupervisor("", Log, NewManager(Log))
+	s := NewSupervisor("", NewManager())
 	jobs := parseJobs(file, t)
-	s.Reload(jobs)
-	s.lock.Lock()
-	if p, ok := s.Mgr.Jobs[1]; !ok {
-		s.Log.Debug("PID not available")
-	} else if p.process == nil {
-		s.Log.Debug("process not available")
-	} else {
-		s.Log.Debug("PID:", p.process.Pid)
+	for _, j := range jobs {
+		s.Mgr.AddJob(j)
 	}
-	s.lock.Unlock()
-	time.Sleep(5)
-	s.WaitForExit()
-	time.Sleep(5)
-	fmt.Println(buf.String())
+	s.StartAllJobs()
+	// s.lock.Lock()
+	// if p, ok := s.Mgr.Jobs[1]; !ok {
+	// 	s.Log.Debug("PID not available")
+	// } else if p.process == nil {
+	// 	s.Log.Debug("process not available")
+	// } else {
+	// 	s.Log.Debug("PID:", p.process.Pid)
+	// }
+	// s.lock.Unlock()
+	// time.Sleep(5)
+	// s.WaitForExit()
+	s.StopAllJobs()
+	// time.Sleep(5)
+	// fmt.Println(buf.String())
 }
