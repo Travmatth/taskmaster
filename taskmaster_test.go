@@ -62,18 +62,5 @@ func TestStopSingle(t *testing.T) {
 		s.Mgr.AddJob(j)
 	}
 	s.StartAllJobs()
-	// s.lock.Lock()
-	// if p, ok := s.Mgr.Jobs[1]; !ok {
-	// 	s.Log.Debug("PID not available")
-	// } else if p.process == nil {
-	// 	s.Log.Debug("process not available")
-	// } else {
-	// 	s.Log.Debug("PID:", p.process.Pid)
-	// }
-	// s.lock.Unlock()
-	// time.Sleep(5)
-	// s.WaitForExit()
 	s.StopAllJobs()
-	// time.Sleep(5)
-	// fmt.Println(buf.String())
 }

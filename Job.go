@@ -178,10 +178,6 @@ func (j *Job) WaitForExit() {
 	j.StopTime = time.Now()
 	j.mutex.Unlock()
 	j.finishedCh <- struct{}{}
-	// select {
-	// case j.finishedCh <- struct{}{}:
-	// default:
-	// }
 }
 
 //PIDExists check the existence of given process
@@ -242,28 +238,12 @@ func (j *Job) Stop(wait bool) {
 	j.Stopped = true
 	j.mutex.Unlock()
 	go func() {
-		// stopped := false
 		j.mutex.RLock()
 		if j.process != nil {
 			Log.Info("Sending Signal", j.StopSignal, "to Job", j.ID)
 			j.process.Signal(j.StopSignal)
 		}
 		j.mutex.RUnlock()
-		// end := time.Now().Add(time.Duration(j.StopTimeout) * time.Second)
-		// for end.After(time.Now()) {
-		// 	if j.Status != PROCSTART && j.Status != PROCRUNNING && j.Status != PROCSTOPPING {
-		// 		Log.Info("Job", j.ID, "Stopped Successfully")
-		// 		stopped = true
-		// 		break
-		// 	}
-		// 	time.Sleep(1 * time.Second)
-		// }
-		// if !stopped {
-		// 	Log.Info("Job", j.ID, "did not stop, SIGKILL issued")
-		// 	if j.process != nil {
-		// 		j.process.Signal(Signals["SIGKILL"])
-		// 	}
-		// }
 		select {
 		case <-time.After(time.Duration(j.StopTimeout) * time.Second):
 			Log.Info("Job", j.ID, "did not stop after timeout of ", j.StopTimeout, "seconds SIGKILL issued")
