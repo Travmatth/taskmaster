@@ -1,18 +1,19 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/op/go-logging"
 )
 
-// var buf bytes.Buffer
+var buf bytes.Buffer
 
 func mockLogger() {
 	loggingBackend := logging.NewBackendFormatter(
-		// logging.NewLogBackend(&buf, "", 0),
-		logging.NewLogBackend(os.Stderr, "", 0),
+		logging.NewLogBackend(&buf, "", 0),
 		logging.MustStringFormatter(
 			`[%{time:2006-01-02 15:04:05}] [%{level:.4s}] [%{shortfile}] - %{message}`,
 		))
@@ -28,7 +29,7 @@ func parseJobs(buf []byte, t *testing.T) []*Job {
 }
 
 func init() {
-	// buf.Reset()
+	buf.Reset()
 }
 
 func TestMain(m *testing.M) {
@@ -63,4 +64,5 @@ func TestStopSingle(t *testing.T) {
 	}
 	s.StartAllJobs()
 	s.StopAllJobs()
+	fmt.Print(buf.String())
 }
