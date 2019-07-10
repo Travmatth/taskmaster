@@ -111,3 +111,59 @@ func TestStartStopMulti(t *testing.T) {
 		t.Errorf("TestStartStopMulti timed out, log:\n%s", buf.String())
 	}
 }
+func TestRestartAfterFailedStart(t *testing.T) {
+	file := "procfiles/RestartAfterFailedStart.yaml"
+	ch := make(chan struct{})
+	s, err := PrepareJobs(t, file)
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+		return
+	}
+	go func() {
+		Log.Info("Starting TestRestartAfterFailedStart")
+		s.StartAllJobs()
+		s.StopAllJobs()
+		Log.Info("Ending TestRestartAfterFailedStart")
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		fmt.Println(buf.String())
+	case <-time.After(time.Duration(5) * time.Second):
+		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", buf.String())
+	}
+}
+
+func TestRestartAfterUnexpectedExit(t *testing.T) {
+}
+
+func TestNoRestartAfterExpectedExit(t *testing.T) {
+}
+
+func TestNoRestartAfterExit(t *testing.T) {
+}
+
+func TestRestartAlways(t *testing.T) {
+}
+
+func TestStartTimeout(t *testing.T) {
+}
+
+func TestMultipleInstances(t *testing.T) {
+}
+
+func TestKillAfterIgnoredStopSignal(t *testing.T) {
+}
+
+func TestRedirectStdout(t *testing.T) {
+}
+
+func TestEnvVars(t *testing.T) {
+}
+
+func TestSetWorkingDir(t *testing.T) {
+}
+
+func TestUmask(t *testing.T) {
+}
