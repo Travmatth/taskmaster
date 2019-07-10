@@ -104,6 +104,7 @@ func (j *Job) Start(wait bool) {
 	}
 }
 
+//Run execs job
 func (j *Job) Run(callback func()) {
 	defer j.mutex.Unlock()
 	j.mutex.Lock()
@@ -165,6 +166,22 @@ func (j *Job) Run(callback func()) {
 	}
 }
 
+//CreateJob launches process
+func (j *Job) CreateJob() error {
+	defaultUmask := syscall.Umask(j.Umask)
+	process, err := os.StartProcess(j.args[0], j.args, &os.ProcAttr{
+		Dir:   j.WorkingDir,
+		Env:   j.EnvVars,
+		Files: j.Redirections,
+	})
+	if err != nil {
+		return err
+	}
+	syscall.Umask(defaultUmask)
+	j.process = process
+	return nil
+}
+
 //WaitForExit waits for os.Process exit and saves returned ProcessState
 func (j *Job) WaitForExit() {
 	state, err := j.process.Wait()
@@ -192,23 +209,6 @@ func (j *Job) PIDExists() bool {
 	return false
 }
 
-//CreateJob launches process
-func (j *Job) CreateJob() error {
-	defaultUmask := syscall.Umask(j.Umask)
-	process, err := os.StartProcess(j.args[0], j.args, &os.ProcAttr{
-		Dir:   j.WorkingDir,
-		Env:   j.EnvVars,
-		Files: j.Redirections,
-	})
-	if err != nil {
-		return err
-	}
-	Log.Info("Job", j.ID, "started")
-	syscall.Umask(defaultUmask)
-	j.process = process
-	return nil
-}
-
 //JobCreateFailure registers the failure of attempt to create job
 func (j *Job) JobCreateFailure(callback func(), errStr string) {
 	Log.Info("Creation of Job", j.ID, "failed:", errStr)
@@ -224,10 +224,12 @@ func (j *Job) MonitorProgramRunning(end time.Time, monitor *int32, program *int3
 	defer j.mutex.Unlock()
 	j.mutex.Lock()
 	if atomic.LoadInt32(program) == 0 && j.Status == PROCSTART {
+		Log.Info("Job", j.ID, "Successfully Started")
 		j.Status = PROCRUNNING
 	}
 }
 
+//ChangeStatus sets state
 func (j *Job) ChangeStatus(state int) {
 	j.Status = state
 }
@@ -253,7 +255,6 @@ func (j *Job) Stop(wait bool) {
 			}
 			break
 		case <-j.finishedCh:
-			Log.Info("Job", j.ID, "receieved stopping signal")
 			break
 		}
 	}()

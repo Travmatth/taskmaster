@@ -10,40 +10,46 @@ type Manager struct {
 	lock sync.Mutex
 }
 
+//NewManager create Manager struct
 func NewManager() *Manager {
 	return &Manager{
 		Jobs: make(map[int]*Job),
 	}
 }
 
-func (m *Manager) AddJob(job *Job) {
+//AddSingleJob add single job
+func (m *Manager) AddSingleJob(job *Job) {
+	defer m.lock.Unlock()
+	m.lock.Lock()
 	m.Jobs[job.ID] = job
 }
 
+//AddMultiJob adds multiple jobs
+func (m *Manager) AddMultiJob(jobs []*Job) {
+	defer m.lock.Unlock()
+	m.lock.Lock()
+	for _, job := range jobs {
+		m.Jobs[job.ID] = job
+	}
+}
+
+//RemoveJob removes single job
 func (m *Manager) RemoveJob(job *Job) {
 	defer m.lock.Unlock()
 	m.lock.Lock()
 	delete(m.Jobs, job.ID)
 }
 
+//RestartJob restarts specified job
 func (m *Manager) RestartJob(job *Job) {
 }
 
-func (m *Manager) StartJob(job *Job) {
-	job.Start(false)
-}
-
-func (m *Manager) StopAllJobs() {
-	fmt.Println("Manager StopAllJobs called")
-	var waitGroup sync.WaitGroup
-	for _, job := range m.Jobs {
-		m.lock.Lock()
-		waitGroup.Add(1)
-		go func(wg *sync.WaitGroup) {
-			defer wg.Done()
-			job.Stop(true)
-		}(&waitGroup)
-		m.lock.Unlock()
+//GetJob retrieves job
+func (m *Manager) GetJob(id int) (*Job, error) {
+	defer m.lock.Unlock()
+	m.lock.Lock()
+	if job, ok := m.Jobs[id]; ok {
+		return job, nil
 	}
-	waitGroup.Wait()
+	return nil, fmt.Errorf("Error: No Job with ID: %d", id)
 }
