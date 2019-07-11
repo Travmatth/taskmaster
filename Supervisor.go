@@ -111,12 +111,14 @@ func (s *Supervisor) StartAllJobs() {
 
 //StopAllJobs stops all jobs & waits for stop
 func (s *Supervisor) StopAllJobs() {
+	Log.Info("StopAllJobs start")
 	ch := make(chan *Job)
 	s.Mgr.lock.Lock()
 	n := len(s.Mgr.Jobs)
 	for _, job := range s.Mgr.Jobs {
 		go func(job *Job) {
 			job.Stop(true)
+			Log.Info("Stop end")
 			ch <- job
 		}(job)
 	}
@@ -124,4 +126,5 @@ func (s *Supervisor) StopAllJobs() {
 		<-ch
 	}
 	s.Mgr.lock.Unlock()
+	Log.Info("StopAllJobs end")
 }

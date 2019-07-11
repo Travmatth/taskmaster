@@ -14,20 +14,22 @@ const (
 	PROCSTOPPED = iota
 	// PROCRUNNING signifies process currently running
 	PROCRUNNING
-	// PROCSTART signifies process beginning its start sequence
+	//PROCSTART signifies process beginning its start sequence
 	PROCSTART
-	// PROCEXITED signifies process has ended
+	//PROCEXITED signifies process has ended
 	PROCEXITED
+	//PROCBACKOFF signifies that process in intermediate state, should not alter
 	PROCBACKOFF
+	//PROCSTOPPING signifies in process of stopping
 	PROCSTOPPING
 )
 
 const (
-	// RESTARTALWAYS signifies restart whenever process is stopped
+	//RESTARTALWAYS signifies restart whenever process is stopped
 	RESTARTALWAYS = iota
-	// RESTARTNEVER signifies never restart process
+	//RESTARTNEVER signifies never restart process
 	RESTARTNEVER
-	// RESTARTUNEXPECTED signifies restart on unexpected exit
+	//RESTARTUNEXPECTED signifies restart on unexpected exit
 	RESTARTUNEXPECTED
 )
 
@@ -92,6 +94,12 @@ func (j *Job) Start(wait bool) {
 			} else if j.restartPolicy != RESTARTALWAYS {
 				Log.Info("Job", j.ID, "restart policy specifies do not restart")
 				break
+			} else if j.process == nil {
+				break
+			} else {
+				j.mutex.RLock()
+				Log.Info(j, "ended with exit code: ", j.state, j.process)
+				j.mutex.RUnlock()
 			}
 		}
 		j.mutex.Lock()
@@ -124,8 +132,8 @@ func (j *Job) Run(callback func()) {
 		j.ChangeStatus(PROCSTART)
 		atomic.AddInt32(j.Restarts, 1)
 		if err := j.CreateJob(); err != nil {
-			if atomic.LoadInt32(j.Restarts) >= j.MaxRestarts {
-				errStr := fmt.Sprintf("Job %d failed to start after retries with error: %s", j.ID, err)
+			if atomic.LoadInt32(j.Restarts) > j.MaxRestarts {
+				errStr := fmt.Sprintf("Job %d failed to start with error: %s", j.ID, err)
 				j.JobCreateFailure(callback, errStr)
 				break
 			} else {
@@ -149,7 +157,7 @@ func (j *Job) Run(callback func()) {
 		j.mutex.Unlock()
 		j.WaitForExit()
 		atomic.StoreInt32(&programExited, 1)
-		for atomic.LoadInt32(&monitorExited) == 0 {
+		for j.StartCheckup > 0 && atomic.LoadInt32(&monitorExited) == 0 {
 			time.Sleep(time.Duration(10) * time.Millisecond)
 		}
 		j.mutex.Lock()
@@ -175,6 +183,7 @@ func (j *Job) CreateJob() error {
 		Files: j.Redirections,
 	})
 	if err != nil {
+		Log.Debug(j, "StartProcess error", err)
 		return err
 	}
 	syscall.Umask(defaultUmask)
@@ -184,6 +193,11 @@ func (j *Job) CreateJob() error {
 
 //WaitForExit waits for os.Process exit and saves returned ProcessState
 func (j *Job) WaitForExit() {
+	if !j.PIDExists() {
+		Log.Debug("PID Dead")
+	} else {
+		Log.Debug("PID Alive")
+	}
 	state, err := j.process.Wait()
 	if err != nil {
 		Log.Info("Job", j.ID, "error waiting for exit: ", err)
@@ -194,7 +208,10 @@ func (j *Job) WaitForExit() {
 	j.state = state
 	j.StopTime = time.Now()
 	j.mutex.Unlock()
-	j.finishedCh <- struct{}{}
+	select {
+	case j.finishedCh <- struct{}{}:
+	default:
+	}
 }
 
 //PIDExists check the existence of given process
@@ -220,6 +237,7 @@ func (j *Job) MonitorProgramRunning(end time.Time, monitor *int32, program *int3
 	for time.Now().Before(end) && atomic.LoadInt32(program) == 0 {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
+	Log.Debug(j, "monitor past time")
 	atomic.StoreInt32(monitor, 1)
 	defer j.mutex.Unlock()
 	j.mutex.Lock()
@@ -269,4 +287,8 @@ func (j *Job) Stop(wait bool) {
 			time.Sleep(1 * time.Second)
 		}
 	}
+}
+
+func (j *Job) String() string {
+	return fmt.Sprintf("Job %d", j.ID)
 }

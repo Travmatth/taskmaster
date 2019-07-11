@@ -1,57 +1,16 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/op/go-logging"
 )
 
-var buf bytes.Buffer
-
-func mockLogger() {
-	loggingBackend := logging.NewBackendFormatter(
-		// logging.NewLogBackend(os.Stdout, "", 0),
-		logging.NewLogBackend(&buf, "", 0),
-		logging.MustStringFormatter(
-			`[%{time:2006-01-02 15:04:05}] [%{level:.4s}] [%{shortfile}] - %{message}`,
-		))
-	Log, _ = logging.GetLogger("taskmaster")
-	leveledBackend := logging.AddModuleLevel(loggingBackend)
-	leveledBackend.SetLevel(logging.DEBUG, "")
-	Log.SetBackend(leveledBackend)
-}
-
-func PrepareJobs(t *testing.T, file string) *Supervisor {
-	buf.Reset()
-	s := NewSupervisor("", NewManager())
-	if buf, err := LoadFile(file); err != nil {
-		panic(err)
-	} else if configs, err := LoadJobs(buf); err != nil {
-		panic(err)
-	} else {
-		jobs := SetDefaults(configs)
-		s.Mgr.AddMultiJob(jobs)
-		return s
-	}
-}
-
-func LogsContain(t *testing.T, logStrings []string) {
-	logs := buf.String()
-	for _, str := range logStrings {
-		if !strings.Contains(logs, str) {
-			fmt.Println(logs)
-			t.Errorf("Logs should contain: %s", str)
-		}
-	}
-}
-
 func TestMain(m *testing.M) {
-	mockLogger()
+	MockLogger()
 	os.Exit(m.Run())
 }
 
@@ -74,16 +33,16 @@ func TestStartStopSingle(t *testing.T) {
 			fmt.Println(err)
 			t.Fail()
 		}
-		LogsContain(t, []string{
+		LogsContain(t, Buf.String(), []string{
 			"Job 0 Successfully Started",
 			"Sending Signal interrupt to Job 0",
 			"Job 0 stopped with status: signal: interrupt",
 			"Job 0 stopped by user, not restarting",
 		})
 	case <-time.After(time.Duration(5) * time.Second):
-		t.Errorf("TestStartStopMulti timed out, log:\n%s", buf.String())
+		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())
 	}
-	buf.Reset()
+	Buf.Reset()
 }
 
 func TestStartStopMulti(t *testing.T) {
@@ -97,7 +56,7 @@ func TestStartStopMulti(t *testing.T) {
 	}()
 	select {
 	case <-ch:
-		LogsContain(t, []string{
+		LogsContain(t, Buf.String(), []string{
 			"Job 1 Successfully Started",
 			"Sending Signal interrupt to Job 1",
 			"Job 1 stopped with status: signal: interrupt",
@@ -108,34 +67,47 @@ func TestStartStopMulti(t *testing.T) {
 			"Job 2 stopped by user, not restarting",
 		})
 	case <-time.After(time.Duration(5) * time.Second):
-		t.Errorf("TestStartStopMulti timed out, log:\n%s", buf.String())
+		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())
 	}
 }
 func TestRestartAfterFailedStart(t *testing.T) {
 	file := "procfiles/RestartAfterFailedStart.yaml"
 	ch := make(chan struct{})
-	s, err := PrepareJobs(t, file)
-	if err != nil {
-		fmt.Println(err)
-		t.Fail()
-		return
-	}
+	s := PrepareJobs(t, file)
 	go func() {
-		Log.Info("Starting TestRestartAfterFailedStart")
 		s.StartAllJobs()
-		s.StopAllJobs()
-		Log.Info("Ending TestRestartAfterFailedStart")
 		ch <- struct{}{}
 	}()
 	select {
 	case <-ch:
-		fmt.Println(buf.String())
-	case <-time.After(time.Duration(5) * time.Second):
-		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", buf.String())
+		logs := Buf.String()
+		str := "Job 0 failed to start with error: fork\\/exec foo: no such file or directory"
+		regex := regexp.MustCompile(str)
+		matches := len(regex.FindAllString(logs, -1)) == 6
+		matches = matches && strings.Contains(logs, "Creation of")
+		matches = matches && len(strings.Split(logs, "\n")) == 7
+		if !matches {
+			t.Errorf(fmt.Sprintf("Error: Incorrect Logs:\n%s", logs))
+		}
+	case <-time.After(time.Duration(20) * time.Second):
+		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
 	}
 }
 
 func TestRestartAfterUnexpectedExit(t *testing.T) {
+	file := "procfiles/RestartAfterUnexpectedExit.yaml"
+	ch := make(chan struct{})
+	s := PrepareJobs(t, file)
+	go func() {
+		s.StartAllJobs()
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		fmt.Println(Buf.String())
+	case <-time.After(time.Duration(10) * time.Second):
+		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
+	}
 }
 
 func TestNoRestartAfterExpectedExit(t *testing.T) {

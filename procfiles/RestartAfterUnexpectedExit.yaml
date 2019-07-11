@@ -1,8 +1,8 @@
 - id: 0
-  command: foo
+  command: ./test/startfails.sh
   instances: 1
   atLaunch: true
-  restartpolicy: always
+  restartpolicy: unexpected
   expectedexit: 0
   startcheckup: 0
   maxrestarts: 5
