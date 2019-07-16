@@ -147,11 +147,11 @@ func (j *Job) Run(callback func()) {
 		if j.StartCheckup <= 0 {
 			Log.Info("Job", j.ID, "Successfully Started")
 			j.ChangeStatus(PROCRUNNING)
-			go callbackWrapper()
+			// go callbackWrapper()
 		} else {
 			go func() {
 				j.MonitorProgramRunning(end, &monitorExited, &programExited)
-				callbackWrapper()
+				// callbackWrapper()
 			}()
 		}
 		j.mutex.Unlock()
