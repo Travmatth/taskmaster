@@ -38,7 +38,7 @@ type Job struct {
 	args          []string
 	AtLaunch      bool
 	restartPolicy int
-	ExpectedExit  os.Signal
+	ExpectedExit  int
 	StartCheckup  int
 	Restarts      *int32
 	MaxRestarts   int32
@@ -91,15 +91,23 @@ func (j *Job) Start(wait bool) {
 			if j.Stopped {
 				Log.Info("Job", j.ID, "stopped by user, not restarting")
 				break
-			} else if j.restartPolicy != RESTARTALWAYS {
-				Log.Info("Job", j.ID, "restart policy specifies do not restart")
-				break
 			} else if j.process == nil {
 				break
-			} else {
+			} else if j.restartPolicy == RESTARTNEVER {
+				Log.Info(j, "restart policy specifies do not restart")
+				break
+			} else if j.restartPolicy == RESTARTUNEXPECTED {
+				end := true
 				j.mutex.RLock()
-				Log.Info(j, "ended with exit code: ", j.state, j.process)
+				exit := j.state.ExitCode()
+				if exit != j.ExpectedExit {
+					Log.Info(j, "Encountered unexpected exit code", exit, ", restarting")
+					end = false
+				}
 				j.mutex.RUnlock()
+				if end {
+					break
+				}
 			}
 		}
 		j.mutex.Lock()
@@ -147,11 +155,11 @@ func (j *Job) Run(callback func()) {
 		if j.StartCheckup <= 0 {
 			Log.Info("Job", j.ID, "Successfully Started")
 			j.ChangeStatus(PROCRUNNING)
-			// go callbackWrapper()
+			go callbackWrapper()
 		} else {
 			go func() {
 				j.MonitorProgramRunning(end, &monitorExited, &programExited)
-				// callbackWrapper()
+				callbackWrapper()
 			}()
 		}
 		j.mutex.Unlock()
@@ -183,7 +191,6 @@ func (j *Job) CreateJob() error {
 		Files: j.Redirections,
 	})
 	if err != nil {
-		Log.Debug(j, "StartProcess error", err)
 		return err
 	}
 	syscall.Umask(defaultUmask)
@@ -193,16 +200,11 @@ func (j *Job) CreateJob() error {
 
 //WaitForExit waits for os.Process exit and saves returned ProcessState
 func (j *Job) WaitForExit() {
-	if !j.PIDExists() {
-		Log.Debug("PID Dead")
-	} else {
-		Log.Debug("PID Alive")
-	}
 	state, err := j.process.Wait()
 	if err != nil {
 		Log.Info("Job", j.ID, "error waiting for exit: ", err)
 	} else if state != nil {
-		Log.Info("Job", j.ID, "stopped with status:", state)
+		Log.Info("Job", j.ID, "exited with status:", state)
 	}
 	j.mutex.Lock()
 	j.state = state
@@ -237,7 +239,6 @@ func (j *Job) MonitorProgramRunning(end time.Time, monitor *int32, program *int3
 	for time.Now().Before(end) && atomic.LoadInt32(program) == 0 {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
-	Log.Debug(j, "monitor past time")
 	atomic.StoreInt32(monitor, 1)
 	defer j.mutex.Unlock()
 	j.mutex.Lock()

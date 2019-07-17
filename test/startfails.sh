@@ -1,9 +1,8 @@
 #!/bin/bash
-FILE=/tmp/taskmaster_tmp
+FILE=test/taskmaster_tmp
 if [ ! -f "$FILE" ]; then
     touch $FILE
-    echo '0' > $FILE
-    echo 0
+    echo '1' > $FILE
     exit 1
 fi
 exec 5<>$FILE

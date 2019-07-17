@@ -31,14 +31,15 @@ func TestStartStopSingle(t *testing.T) {
 	case err := <-ch:
 		if err != nil {
 			fmt.Println(err)
-			t.Fail()
+			t.Errorf("Err not nil:\n%s", Buf.String())
+		} else {
+			LogsContain(t, Buf.String(), []string{
+				"Job 0 Successfully Started",
+				"Sending Signal interrupt to Job 0",
+				"Job 0 exited with status: signal: interrupt",
+				"Job 0 stopped by user, not restarting",
+			})
 		}
-		LogsContain(t, Buf.String(), []string{
-			"Job 0 Successfully Started",
-			"Sending Signal interrupt to Job 0",
-			"Job 0 stopped with status: signal: interrupt",
-			"Job 0 stopped by user, not restarting",
-		})
 	case <-time.After(time.Duration(5) * time.Second):
 		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())
 	}
@@ -59,11 +60,11 @@ func TestStartStopMulti(t *testing.T) {
 		LogsContain(t, Buf.String(), []string{
 			"Job 1 Successfully Started",
 			"Sending Signal interrupt to Job 1",
-			"Job 1 stopped with status: signal: interrupt",
+			"Job 1 exited with status: signal: interrupt",
 			"Job 1 stopped by user, not restarting",
 			"Job 2 Successfully Started",
 			"Sending Signal interrupt to Job 2",
-			"Job 2 stopped with status: signal: interrupt",
+			"Job 2 exited with status: signal: interrupt",
 			"Job 2 stopped by user, not restarting",
 		})
 	case <-time.After(time.Duration(5) * time.Second):
@@ -99,12 +100,34 @@ func TestRestartAfterUnexpectedExit(t *testing.T) {
 	ch := make(chan struct{})
 	s := PrepareJobs(t, file)
 	go func() {
+		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
+		<-j.finishedCh
+		<-j.finishedCh
+		<-j.finishedCh
+		<-j.finishedCh
+		<-j.finishedCh
 		ch <- struct{}{}
 	}()
 	select {
 	case <-ch:
-		fmt.Println(Buf.String())
+		LogsContain(t, Buf.String(), []string{
+			"Job 0 Successfully Started",
+			"Job 0 exited with status: exit status 1",
+			"Job 0 Encountered unexpected exit code 1 , restarting",
+			"Job 0 Successfully Started",
+			"Job 0 exited with status: exit status 1",
+			"Job 0 Encountered unexpected exit code 1 , restarting",
+			"Job 0 Successfully Started",
+			"Job 0 exited with status: exit status 1",
+			"Job 0 Encountered unexpected exit code 1 , restarting",
+			"Job 0 Successfully Started",
+			"Job 0 exited with status: exit status 1",
+			"Job 0 Encountered unexpected exit code 1 , restarting",
+			"Job 0 Successfully Started",
+			"Job 0 exited with status: exit status 1",
+			"Job 0 Encountered unexpected exit code 1 , restarting",
+		})
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
 	}
