@@ -1,0 +1,17 @@
+- id: 0
+  command: ./test/expectedexit.sh
+  instances: 1
+  atLaunch: true
+  restartpolicy: always
+  expectedexit: 0
+  startcheckup: 0
+  maxrestarts: 5
+  stopsignal: SIGINT
+  stoptimeout: 5
+  redirections:
+    stdin:
+    stdout:
+    stderr:
+  envvars:
+  workingdir:
+  umask:

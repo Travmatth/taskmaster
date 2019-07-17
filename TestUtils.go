@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -11,10 +13,15 @@ import (
 
 var Buf bytes.Buffer
 
-func MockLogger() {
+func MockLogger(out string) {
+	var logOut io.Writer
+	if out == "buf" {
+		logOut = &Buf
+	} else if out == "stdout" {
+		logOut = os.Stdout
+	}
 	loggingBackend := logging.NewBackendFormatter(
-		// logging.NewLogBackend(os.Stdout, "", 0),
-		logging.NewLogBackend(&Buf, "", 0),
+		logging.NewLogBackend(logOut, "", 0),
 		logging.MustStringFormatter(
 			`[%{time:2006-01-02 15:04:05}] [%{level:.4s}] [%{shortfile}] - %{message}`,
 		))

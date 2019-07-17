@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"regexp"
@@ -10,7 +11,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	MockLogger()
+	var logOut string
+	flag.StringVar(&logOut, "logs", "buf", "Log file output")
+	flag.Parse()
+	MockLogger(logOut)
 	os.Exit(m.Run())
 }
 
@@ -134,15 +138,123 @@ func TestRestartAfterUnexpectedExit(t *testing.T) {
 }
 
 func TestNoRestartAfterExpectedExit(t *testing.T) {
+	file := "procfiles/NoRestartAfterExpectedExit.yaml"
+	ch := make(chan struct{})
+	s := PrepareJobs(t, file)
+	go func() {
+		j, _ := s.Mgr.GetJob(0)
+		s.StartAllJobs()
+		<-j.finishedCh
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		logs := Buf.String()
+		str := "Job 0 Encountered unexpected exit code 1 , restarting"
+		if strings.Contains(logs, str) {
+			t.Errorf(fmt.Sprintf("Error: Incorrect Logs:\n%s", logs))
+		} else {
+			LogsContain(t, Buf.String(), []string{
+				"Job 0 Successfully Started",
+				"Job 0 exited with status: exit status 1",
+			})
+		}
+	case <-time.After(time.Duration(10) * time.Second):
+		t.Errorf("TestNoRestartAfterExpectedExit timed out, log:\n%s", Buf.String())
+	}
 }
 
 func TestNoRestartAfterExit(t *testing.T) {
+	file := "procfiles/NoRestartAfterExit.yaml"
+	ch := make(chan struct{})
+	s := PrepareJobs(t, file)
+	go func() {
+		j, _ := s.Mgr.GetJob(0)
+		s.StartAllJobs()
+		<-j.finishedCh
+		<-j.finishedCh
+		s.StopAllJobs()
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		logs := Buf.String()
+		str := "Job 0 Encountered unexpected exit code 1 , restarting"
+		if strings.Count(logs, str) > 1 {
+			t.Errorf(fmt.Sprintf("Error: Incorrect Logs:\n%s", logs))
+		}
+	case <-time.After(time.Duration(10) * time.Second):
+		t.Errorf("TestNoRestartAfterExit timed out, logs:\n%s", Buf.String())
+	}
 }
 
 func TestRestartAlways(t *testing.T) {
+	file := "procfiles/RestartAlways.yaml"
+	ch := make(chan struct{})
+	s := PrepareJobs(t, file)
+	go func() {
+		j, _ := s.Mgr.GetJob(0)
+		s.StartAllJobs()
+		<-j.finishedCh
+		<-j.finishedCh
+		s.StopAllJobs()
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		logs := Buf.String()
+		LogsContain(t, logs, []string{
+			"Job 0 Successfully Started",
+			"Job 0 exited with status: exit status 1",
+			"Job 0 Successfully Started",
+			"Job 0 exited with status: exit status 1",
+			"Job 0 Successfully Started",
+			"Sending Signal interrupt to Job 0",
+			"Job 0 exited with status: signal: interrupt",
+			"Job 0 stopped by user, not restarting",
+		})
+	case <-time.After(time.Duration(10) * time.Second):
+		t.Errorf("TestNoRestartAfterExit timed out, logs:\n%s", Buf.String())
+	}
 }
 
 func TestStartTimeout(t *testing.T) {
+	file := "procfiles/StartTimeout.yaml"
+	ch := make(chan struct{})
+	s := PrepareJobs(t, file)
+	go func() {
+		j, _ := s.Mgr.GetJob(0)
+		s.StartAllJobs()
+		<-j.finishedCh
+		<-j.finishedCh
+		<-j.finishedCh
+		<-j.finishedCh
+		<-j.finishedCh
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		t.Errorf("Logs\n%s", Buf.String())
+		// LogsContain(t, Buf.String(), []string{
+		// 	"Job 0 Successfully Started",
+		// 	"Job 0 exited with status: exit status 1",
+		// 	"Job 0 Encountered unexpected exit code 1 , restarting",
+		// 	"Job 0 Successfully Started",
+		// 	"Job 0 exited with status: exit status 1",
+		// 	"Job 0 Encountered unexpected exit code 1 , restarting",
+		// 	"Job 0 Successfully Started",
+		// 	"Job 0 exited with status: exit status 1",
+		// 	"Job 0 Encountered unexpected exit code 1 , restarting",
+		// 	"Job 0 Successfully Started",
+		// 	"Job 0 exited with status: exit status 1",
+		// 	"Job 0 Encountered unexpected exit code 1 , restarting",
+		// 	"Job 0 Successfully Started",
+		// 	"Job 0 exited with status: exit status 1",
+		// 	"Job 0 Encountered unexpected exit code 1 , restarting",
+		// })
+	case <-time.After(time.Duration(10) * time.Second):
+		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
+	}
 }
 
 func TestMultipleInstances(t *testing.T) {
@@ -152,6 +264,9 @@ func TestKillAfterIgnoredStopSignal(t *testing.T) {
 }
 
 func TestRedirectStdout(t *testing.T) {
+}
+
+func TestRedirectStderr(t *testing.T) {
 }
 
 func TestEnvVars(t *testing.T) {

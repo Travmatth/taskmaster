@@ -126,7 +126,6 @@ func LoadFile(file string) ([]byte, error) {
 	return buf, nil
 }
 
-// return configs, NewLogger(args[1:])
 // LoadConfig opens config file and parses yaml syntax into array of JobConfig structs
 func LoadJobs(buf []byte) ([]JobConfig, error) {
 	configs := []JobConfig{}

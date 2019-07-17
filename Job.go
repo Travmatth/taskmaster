@@ -153,10 +153,11 @@ func (j *Job) Run(callback func()) {
 		monitorExited := int32(0)
 		programExited := int32(0)
 		if j.StartCheckup <= 0 {
-			Log.Info("Job", j.ID, "Successfully Started")
+			Log.Info(j, "Successfully Started")
 			j.ChangeStatus(PROCRUNNING)
 			go callbackWrapper()
 		} else {
+			Log.Debug(j, "checking after", j.StartCheckup)
 			go func() {
 				j.MonitorProgramRunning(end, &monitorExited, &programExited)
 				callbackWrapper()
@@ -178,6 +179,8 @@ func (j *Job) Run(callback func()) {
 		if atomic.LoadInt32(j.Restarts) >= j.MaxRestarts {
 			j.JobCreateFailure(callback, fmt.Sprintf("Failed to start Job %d maximum retries reached", j.ID))
 			break
+		} else {
+			Log.Info(j, "Start failed, restarting")
 		}
 	}
 }
@@ -242,9 +245,12 @@ func (j *Job) MonitorProgramRunning(end time.Time, monitor *int32, program *int3
 	atomic.StoreInt32(monitor, 1)
 	defer j.mutex.Unlock()
 	j.mutex.Lock()
-	if atomic.LoadInt32(program) == 0 && j.Status == PROCSTART {
+	progState := atomic.LoadInt32(program)
+	if progState == 0 && j.Status == PROCSTART {
 		Log.Info("Job", j.ID, "Successfully Started")
 		j.Status = PROCRUNNING
+	} else {
+		Log.Debug(j, "monitor failed, program exit: ", progState, "status", j.Status)
 	}
 }
 
