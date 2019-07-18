@@ -52,7 +52,6 @@ func LogsContain(t *testing.T, logs string, logStrings []string) {
 		if !strings.Contains(logs, str) {
 			fmt.Println(logs)
 			t.Errorf("Logs should contain: %s", str)
-			*pass = false
 		}
 	}
 }

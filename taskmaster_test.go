@@ -11,8 +11,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	pass = new(bool)
-	*pass = true
 	var logOut string
 	flag.StringVar(&logOut, "logs", "buf", "Log file output")
 	flag.Parse()
@@ -245,6 +243,37 @@ func TestStartTimeout(t *testing.T) {
 }
 
 func TestKillAfterIgnoredStopSignal(t *testing.T) {
+	file := "procfiles/KillAfterIgnoredStopSignal.yaml"
+	ch := make(chan error)
+	s := PrepareJobs(t, file)
+	go func() {
+		j, _ := s.Mgr.GetJob(0)
+		fmt.Println(j.args)
+		if err := s.StartJob(0); err != nil {
+			ch <- err
+		} else if err = s.StopJob(0); err != nil {
+			ch <- err
+		} else {
+			ch <- nil
+		}
+	}()
+	select {
+	case err := <-ch:
+		if err != nil {
+			fmt.Println(err)
+			t.Errorf("Err not nil:\n%s", Buf.String())
+			// } else {
+			// 	LogsContain(t, Buf.String(), []string{
+			// 		"Job 0 Successfully Started",
+			// 		"Sending Signal interrupt to Job 0",
+			// 		"Job 0 exited with status: signal: interrupt",
+			// 		"Job 0 stopped by user, not restarting",
+			// 	})
+		}
+		fmt.Println(Buf.String())
+	case <-time.After(time.Duration(5) * time.Second):
+		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())
+	}
 	Buf.Reset()
 }
 

@@ -1,0 +1,17 @@
+- id: 0
+  command: ./test/sleep_sigint_trap.sh
+  instances: 1
+  atLaunch: true
+  restartpolicy: never
+  expectedexit: 0
+  startcheckup: 0
+  maxrestarts: 5
+  stopsignal: SIGINT
+  stoptimeout: 3
+  redirections:
+    stdin:
+    stdout: test/ID0_out.test
+    stderr:
+  envvars:
+  workingdir:
+  umask:
