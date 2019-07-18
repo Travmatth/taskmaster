@@ -172,8 +172,6 @@ func TestNoRestartAfterExit(t *testing.T) {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
 		<-j.finishedCh
-		<-j.finishedCh
-		s.StopAllJobs()
 		ch <- struct{}{}
 	}()
 	select {
@@ -239,10 +237,10 @@ func TestStartTimeout(t *testing.T) {
 	}
 }
 
-func TestMultipleInstances(t *testing.T) {
+func TestKillAfterIgnoredStopSignal(t *testing.T) {
 }
 
-func TestKillAfterIgnoredStopSignal(t *testing.T) {
+func TestMultipleInstances(t *testing.T) {
 }
 
 func TestRedirectStdout(t *testing.T) {
