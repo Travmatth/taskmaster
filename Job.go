@@ -157,10 +157,8 @@ func (j *Job) Run(callback func()) {
 			j.ChangeStatus(PROCRUNNING)
 			go callbackWrapper()
 		} else {
-			Log.Debug(j, "checking after", j.StartCheckup)
 			go func() {
-				j.MonitorProgramRunning(end, &monitorExited, &programExited)
-				callbackWrapper()
+				j.MonitorProgramRunning(callbackWrapper, end, &monitorExited, &programExited)
 			}()
 		}
 		j.mutex.Unlock()
@@ -238,7 +236,7 @@ func (j *Job) JobCreateFailure(callback func(), errStr string) {
 }
 
 // MonitorProgramRunning checks the run status of the program after exit
-func (j *Job) MonitorProgramRunning(end time.Time, monitor *int32, program *int32) {
+func (j *Job) MonitorProgramRunning(callback func(), end time.Time, monitor *int32, program *int32) {
 	for time.Now().Before(end) && atomic.LoadInt32(program) == 0 {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
@@ -249,8 +247,9 @@ func (j *Job) MonitorProgramRunning(end time.Time, monitor *int32, program *int3
 	if progState == 0 && j.Status == PROCSTART {
 		Log.Info("Job", j.ID, "Successfully Started")
 		j.Status = PROCRUNNING
+		callback()
 	} else {
-		Log.Debug(j, "monitor failed, program exit: ", progState, "status", j.Status)
+		Log.Debug(j, "monitor failed, program exit: ", progState, " with job status", j.Status)
 	}
 }
 

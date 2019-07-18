@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -52,4 +54,14 @@ func LogsContain(t *testing.T, logs string, logStrings []string) {
 			t.Errorf("Logs should contain: %s", str)
 		}
 	}
+}
+
+//https:blog.sgmansfield.com/2015/12/goroutine-ids/
+func getGID() uint64 {
+	b := make([]byte, 64)
+	b = b[:runtime.Stack(b, false)]
+	b = bytes.TrimPrefix(b, []byte("goroutine "))
+	b = b[:bytes.IndexByte(b, ' ')]
+	n, _ := strconv.ParseUint(string(b), 10, 64)
+	return n
 }
