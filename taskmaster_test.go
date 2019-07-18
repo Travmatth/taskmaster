@@ -11,6 +11,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	pass = new(bool)
+	*pass = true
 	var logOut string
 	flag.StringVar(&logOut, "logs", "buf", "Log file output")
 	flag.Parse()
@@ -97,6 +99,7 @@ func TestRestartAfterFailedStart(t *testing.T) {
 	case <-time.After(time.Duration(20) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
 	}
+	Buf.Reset()
 }
 
 func TestRestartAfterUnexpectedExit(t *testing.T) {
@@ -135,6 +138,7 @@ func TestRestartAfterUnexpectedExit(t *testing.T) {
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
 	}
+	Buf.Reset()
 }
 
 func TestNoRestartAfterExpectedExit(t *testing.T) {
@@ -162,6 +166,7 @@ func TestNoRestartAfterExpectedExit(t *testing.T) {
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestNoRestartAfterExpectedExit timed out, log:\n%s", Buf.String())
 	}
+	Buf.Reset()
 }
 
 func TestNoRestartAfterExit(t *testing.T) {
@@ -184,6 +189,7 @@ func TestNoRestartAfterExit(t *testing.T) {
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestNoRestartAfterExit timed out, logs:\n%s", Buf.String())
 	}
+	Buf.Reset()
 }
 
 func TestRestartAlways(t *testing.T) {
@@ -200,8 +206,7 @@ func TestRestartAlways(t *testing.T) {
 	}()
 	select {
 	case <-ch:
-		logs := Buf.String()
-		LogsContain(t, logs, []string{
+		LogsContain(t, Buf.String(), []string{
 			"Job 0 Successfully Started",
 			"Job 0 exited with status: exit status 1",
 			"Job 0 Successfully Started",
@@ -214,6 +219,7 @@ func TestRestartAlways(t *testing.T) {
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestNoRestartAfterExit timed out, logs:\n%s", Buf.String())
 	}
+	Buf.Reset()
 }
 
 func TestStartTimeout(t *testing.T) {
@@ -235,25 +241,33 @@ func TestStartTimeout(t *testing.T) {
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
 	}
+	Buf.Reset()
 }
 
 func TestKillAfterIgnoredStopSignal(t *testing.T) {
+	Buf.Reset()
 }
 
 func TestMultipleInstances(t *testing.T) {
+	Buf.Reset()
 }
 
 func TestRedirectStdout(t *testing.T) {
+	Buf.Reset()
 }
 
 func TestRedirectStderr(t *testing.T) {
+	Buf.Reset()
 }
 
 func TestEnvVars(t *testing.T) {
+	Buf.Reset()
 }
 
 func TestSetWorkingDir(t *testing.T) {
+	Buf.Reset()
 }
 
 func TestUmask(t *testing.T) {
+	Buf.Reset()
 }
