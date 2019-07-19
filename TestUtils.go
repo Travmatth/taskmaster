@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"runtime"
 	"strconv"
@@ -14,6 +15,14 @@ import (
 )
 
 var Buf bytes.Buffer
+
+func FileContains(file string) (string, error) {
+	if data, err := ioutil.ReadFile(file); err != nil {
+		return "", err
+	} else {
+		return string(data), nil
+	}
+}
 
 func MockLogger(out string) {
 	var logOut io.Writer

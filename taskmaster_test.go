@@ -247,11 +247,12 @@ func TestKillAfterIgnoredStopSignal(t *testing.T) {
 	ch := make(chan error)
 	s := PrepareJobs(t, file)
 	go func() {
-		j, _ := s.Mgr.GetJob(0)
-		fmt.Println(j.args)
+		// j, _ := s.Mgr.GetJob(0)
 		if err := s.StartJob(0); err != nil {
 			ch <- err
-		} else if err = s.StopJob(0); err != nil {
+		}
+		// j.Redirections[1].WriteString("Redirections working")
+		if err := s.StopJob(0); err != nil {
 			ch <- err
 		} else {
 			ch <- nil
@@ -282,14 +283,92 @@ func TestMultipleInstances(t *testing.T) {
 }
 
 func TestRedirectStdout(t *testing.T) {
+	file := "procfiles/RedirectStdout.yaml"
+	ch := make(chan struct{})
+	s := PrepareJobs(t, file)
+	go func() {
+		j, _ := s.Mgr.GetJob(0)
+		s.StartAllJobs()
+		<-j.finishedCh
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		logs := Buf.String()
+		if file, err := FileContains("test/RedirectStdout.test"); err != nil {
+			t.Errorf("Error: file error\n%s\nlogs:%s", err, logs)
+		} else if file != "written to stdout" {
+			t.Errorf("Error: incorrect string\n%s\nlogs:%s", file, logs)
+		} else {
+			LogsContain(t, logs, []string{
+				"Job 0 Successfully Started",
+				"Job 0 exited with status: exit status 0",
+				"Job 0 restart policy specifies do not restart",
+			})
+		}
+	case <-time.After(time.Duration(10) * time.Second):
+		t.Errorf("TestRedirectStdout timed out, logs:\n%s", Buf.String())
+	}
 	Buf.Reset()
 }
 
 func TestRedirectStderr(t *testing.T) {
+	file := "procfiles/RedirectStderr.yaml"
+	ch := make(chan struct{})
+	s := PrepareJobs(t, file)
+	go func() {
+		j, _ := s.Mgr.GetJob(0)
+		s.StartAllJobs()
+		<-j.finishedCh
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		logs := Buf.String()
+		if file, err := FileContains("test/RedirectStderr.test"); err != nil {
+			t.Errorf("Error: file error\n%s\nlogs:%s", err, logs)
+		} else if file != "written to stderr" {
+			t.Errorf("Error: incorrect string\n%s\nlogs:%s", file, logs)
+		} else {
+			LogsContain(t, logs, []string{
+				"Job 0 Successfully Started",
+				"Job 0 exited with status: exit status 0",
+				"Job 0 restart policy specifies do not restart",
+			})
+		}
+	case <-time.After(time.Duration(10) * time.Second):
+		t.Errorf("TestRedirectStderr timed out, logs:\n%s", Buf.String())
+	}
 	Buf.Reset()
 }
 
 func TestEnvVars(t *testing.T) {
+	file := "procfiles/EnvVars.yaml"
+	ch := make(chan struct{})
+	s := PrepareJobs(t, file)
+	go func() {
+		j, _ := s.Mgr.GetJob(0)
+		s.StartAllJobs()
+		<-j.finishedCh
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		logs := Buf.String()
+		if file, err := FileContains("test/EnvVars.test"); err != nil {
+			t.Errorf("Error: file error\n%s\nlogs:%s", err, logs)
+		} else if file != "env vars working" {
+			t.Errorf("Error: incorrect string\n%s\nlogs:%s", file, logs)
+		} else {
+			LogsContain(t, logs, []string{
+				"Job 0 Successfully Started",
+				"Job 0 exited with status: exit status 0",
+				"Job 0 restart policy specifies do not restart",
+			})
+		}
+	case <-time.After(time.Duration(10) * time.Second):
+		t.Errorf("TestEnvVars timed out, logs:\n%s", Buf.String())
+	}
 	Buf.Reset()
 }
 
