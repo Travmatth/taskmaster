@@ -4,13 +4,13 @@
   atLaunch: true
   restartpolicy: never
   expectedexit: 0
-  startcheckup: 0
-  maxrestarts: 5
+  startcheckup: 2
+  maxrestarts: 0
   stopsignal: SIGINT
   stoptimeout: 3
   redirections:
     stdin:
-    stdout: test/ID0_out.test
+    stdout: test/KillAfterIgnoredStopSignal.test
     stderr:
   envvars:
   workingdir:

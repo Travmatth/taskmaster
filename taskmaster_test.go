@@ -261,7 +261,6 @@ func TestKillAfterIgnoredStopSignal(t *testing.T) {
 	select {
 	case err := <-ch:
 		if err != nil {
-			fmt.Println(err)
 			t.Errorf("Err not nil:\n%s", Buf.String())
 			// } else {
 			// 	LogsContain(t, Buf.String(), []string{
@@ -272,7 +271,7 @@ func TestKillAfterIgnoredStopSignal(t *testing.T) {
 			// 	})
 		}
 		fmt.Println(Buf.String())
-	case <-time.After(time.Duration(5) * time.Second):
+	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())
 	}
 	Buf.Reset()
