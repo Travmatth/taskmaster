@@ -262,22 +262,24 @@ func TestKillAfterIgnoredStopSignal(t *testing.T) {
 	case err := <-ch:
 		if err != nil {
 			t.Errorf("Err not nil:\n%s", Buf.String())
-			// } else {
-			// 	LogsContain(t, Buf.String(), []string{
-			// 		"Job 0 Successfully Started",
-			// 		"Sending Signal interrupt to Job 0",
-			// 		"Job 0 exited with status: signal: interrupt",
-			// 		"Job 0 stopped by user, not restarting",
-			// 	})
+		} else {
+			if contents, err := FileContains("test/KillAfterIgnoredStopSignal.test"); err != nil {
+				t.Errorf("Error: failed to open file with error %s", err)
+			} else if contents != "INT caught" {
+				t.Errorf("Error: incorrect file contents %s", contents)
+			} else {
+				LogsContain(t, Buf.String(), []string{
+					"Job 0 Successfully Started",
+					"Sending Signal interrupt to Job 0",
+					"Job 0 did not stop after timeout of  3 seconds SIGKILL issued",
+					"Job 0 exited with status: signal: killed",
+					"Job 0 stopped by user, not restarting",
+				})
+			}
 		}
-		fmt.Println(Buf.String())
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())
 	}
-	Buf.Reset()
-}
-
-func TestMultipleInstances(t *testing.T) {
 	Buf.Reset()
 }
 
@@ -368,6 +370,10 @@ func TestEnvVars(t *testing.T) {
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestEnvVars timed out, logs:\n%s", Buf.String())
 	}
+	Buf.Reset()
+}
+
+func TestMultipleInstances(t *testing.T) {
 	Buf.Reset()
 }
 

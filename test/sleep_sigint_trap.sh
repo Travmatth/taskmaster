@@ -1,6 +1,6 @@
 #!/bin/bash
 
-trap -- "echo INT caught; trap INT" INT
+trap -- "echo -n INT caught; trap INT" INT
 while :
 do
 sleep 1
