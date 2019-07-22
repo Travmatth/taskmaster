@@ -186,6 +186,7 @@ func (j *Job) Run(callback func()) {
 //CreateJob launches process
 func (j *Job) CreateJob() error {
 	defaultUmask := syscall.Umask(j.Umask)
+	defer syscall.Umask(defaultUmask)
 	process, err := os.StartProcess(j.args[0], j.args, &os.ProcAttr{
 		Dir:   j.WorkingDir,
 		Env:   j.EnvVars,
@@ -194,7 +195,6 @@ func (j *Job) CreateJob() error {
 	if err != nil {
 		return err
 	}
-	syscall.Umask(defaultUmask)
 	j.process = process
 	return nil
 }

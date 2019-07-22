@@ -1,0 +1,17 @@
+- id: 0
+  command: ./test/write_with_umask.sh
+  instances: 1
+  atLaunch: true
+  restartpolicy: never
+  expectedexit: 0
+  startcheckup: 0
+  maxrestarts: 0
+  stopsignal: SIGINT
+  stoptimeout: 0
+  redirections:
+    stdin:
+    stdout: test/SetUmask.test
+    stderr: test/SetUmask.test
+  envvars:
+  workingdir:
+  umask: 0
