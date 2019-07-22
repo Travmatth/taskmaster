@@ -1,0 +1,17 @@
+- id: 0
+  command: ./write_on_workdir.sh
+  instances: 1
+  atLaunch: true
+  restartpolicy: never
+  expectedexit: 0
+  startcheckup: 0
+  maxrestarts: 5
+  stopsignal: SIGINT
+  stoptimeout: 0
+  redirections:
+    stdin:
+    stdout: test/SetWorkingDir.test
+    stderr:
+  envvars:
+  workingdir: test
+  umask:

@@ -372,6 +372,32 @@ func TestEnvVars(t *testing.T) {
 }
 
 func TestSetWorkingDir(t *testing.T) {
+	file := "procfiles/SetWorkingDir.yaml"
+	ch := make(chan struct{})
+	s := PrepareJobs(t, file)
+	go func() {
+		j, _ := s.Mgr.GetJob(0)
+		s.StartAllJobs()
+		<-j.finishedCh
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		logs := Buf.String()
+		if file, err := FileContains("test/SetWorkingDir.test"); err != nil {
+			t.Errorf("Error: file error\n%s\nlogs:%s", err, logs)
+		} else if file != "exists" {
+			t.Errorf("Error: incorrect string\n%s\nlogs:%s", file, logs)
+		} else {
+			LogsContain(t, logs, []string{
+				"Job 0 Successfully Started",
+				"Job 0 exited with status: exit status 0",
+				"Job 0 restart policy specifies do not restart",
+			})
+		}
+	case <-time.After(time.Duration(10) * time.Second):
+		t.Errorf("TestRedirectStdout timed out, logs:\n%s", Buf.String())
+	}
 	Buf.Reset()
 }
 
