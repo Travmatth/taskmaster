@@ -247,11 +247,9 @@ func TestKillAfterIgnoredStopSignal(t *testing.T) {
 	ch := make(chan error)
 	s := PrepareJobs(t, file)
 	go func() {
-		// j, _ := s.Mgr.GetJob(0)
 		if err := s.StartJob(0); err != nil {
 			ch <- err
 		}
-		// j.Redirections[1].WriteString("Redirections working")
 		if err := s.StopJob(0); err != nil {
 			ch <- err
 		} else {
@@ -373,14 +371,14 @@ func TestEnvVars(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestMultipleInstances(t *testing.T) {
-	Buf.Reset()
-}
-
 func TestSetWorkingDir(t *testing.T) {
 	Buf.Reset()
 }
 
 func TestUmask(t *testing.T) {
+	Buf.Reset()
+}
+
+func TestMultipleInstances(t *testing.T) {
 	Buf.Reset()
 }

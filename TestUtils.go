@@ -17,11 +17,11 @@ import (
 var Buf bytes.Buffer
 
 func FileContains(file string) (string, error) {
-	if data, err := ioutil.ReadFile(file); err != nil {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
 		return "", err
-	} else {
-		return string(data), nil
 	}
+	return string(data), nil
 }
 
 func MockLogger(out string) {
@@ -33,9 +33,7 @@ func MockLogger(out string) {
 	}
 	loggingBackend := logging.NewBackendFormatter(
 		logging.NewLogBackend(logOut, "", 0),
-		logging.MustStringFormatter(
-			`[%{time:2006-01-02 15:04:05}] [%{level:.4s}] [%{shortfile}] - %{message}`,
-		))
+		logging.MustStringFormatter(`%{message}`))
 	Log, _ = logging.GetLogger("taskmaster")
 	leveledBackend := logging.AddModuleLevel(loggingBackend)
 	leveledBackend.SetLevel(logging.DEBUG, "")
