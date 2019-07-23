@@ -434,3 +434,7 @@ func TestUmask(t *testing.T) {
 func TestMultipleInstances(t *testing.T) {
 	Buf.Reset()
 }
+
+func TestChildProcessesKilled(t *testing.T) {
+	Buf.Reset()
+}
