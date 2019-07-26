@@ -13,6 +13,7 @@ type Supervisor struct {
 	restart bool
 }
 
+//NewSupervisor returns a Supervisor new struct
 func NewSupervisor(file string, mgr *Manager) *Supervisor {
 	return &Supervisor{
 		Config: file,
@@ -20,6 +21,7 @@ func NewSupervisor(file string, mgr *Manager) *Supervisor {
 	}
 }
 
+//DiffJobs sorts the given jobs into current, old, changed, and new slices
 func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 	defer s.lock.Unlock()
 	s.lock.Lock()
@@ -30,13 +32,13 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 		} else if diff := reflect.DeepEqual(cfg.cfg, job.cfg); diff {
 			changedJobs = append(changedJobs, cfg)
 		} else {
-			currentJobs = append(currentJobs, cfg)
+			job := s.Mgr.RemoveJob(cgf.ID)
+			currentJobs = append(currentJobs, job)
 		}
 		s.Mgr.RemoveJob(cfg)
 	}
 	for _, job := range s.Jobs {
 		oldJobs = append(oldJobs, job)
-		s.Mgr.RemoveJob(job)
 	}
 	return currentJobs, oldJobs, changedJobs, newJobs
 }

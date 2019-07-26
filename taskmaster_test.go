@@ -431,7 +431,35 @@ func TestUmask(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestMultipleInstances(t *testing.T) {
+func TestStartStopMultipleInstances(t *testing.T) {
+	file := "procfiles/StartStopMultipleInstances.yaml"
+	ch := make(chan error)
+	s := PrepareJobs(t, file)
+	go func() {
+		if err := s.StartJob(0); err != nil {
+			ch <- err
+		} else if err = s.StopJob(0); err != nil {
+			ch <- err
+		} else {
+			ch <- nil
+		}
+	}()
+	select {
+	case err := <-ch:
+		if err != nil {
+			fmt.Println(err)
+			t.Errorf("Err not nil:\n%s", Buf.String())
+		} else {
+			LogsContain(t, Buf.String(), []string{
+				"Job 0 Successfully Started",
+				"Sending Signal interrupt to Job 0",
+				"Job 0 exited with status: signal: interrupt",
+				"Job 0 stopped by user, not restarting",
+			})
+		}
+	case <-time.After(time.Duration(5) * time.Second):
+		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())
+	}
 	Buf.Reset()
 }
 
