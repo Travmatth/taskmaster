@@ -34,8 +34,7 @@ func TestStartStopSingle(t *testing.T) {
 	select {
 	case err := <-ch:
 		if err != nil {
-			fmt.Println(err)
-			t.Errorf("Err not nil:\n%s", Buf.String())
+			t.Errorf("Err not nil:\n%s\n%s", err, Buf.String())
 		} else {
 			LogsContain(t, Buf.String(), []string{
 				"Job 0 Successfully Started",
@@ -107,11 +106,11 @@ func TestRestartAfterUnexpectedExit(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
-		<-j.finishedCh
-		<-j.finishedCh
-		<-j.finishedCh
-		<-j.finishedCh
-		<-j.finishedCh
+		<-j.Instances[0].finishedCh
+		<-j.Instances[0].finishedCh
+		<-j.Instances[0].finishedCh
+		<-j.Instances[0].finishedCh
+		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -146,7 +145,7 @@ func TestNoRestartAfterExpectedExit(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
-		<-j.finishedCh
+		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -174,7 +173,7 @@ func TestNoRestartAfterExit(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
-		<-j.finishedCh
+		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -197,8 +196,8 @@ func TestRestartAlways(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
-		<-j.finishedCh
-		<-j.finishedCh
+		<-j.Instances[0].finishedCh
+		<-j.Instances[0].finishedCh
 		s.StopAllJobs()
 		ch <- struct{}{}
 	}()
@@ -288,7 +287,7 @@ func TestRedirectStdout(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
-		<-j.finishedCh
+		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -318,7 +317,7 @@ func TestRedirectStderr(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
-		<-j.finishedCh
+		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -348,7 +347,7 @@ func TestEnvVars(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
-		<-j.finishedCh
+		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -378,7 +377,7 @@ func TestSetWorkingDir(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
-		<-j.finishedCh
+		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -408,7 +407,7 @@ func TestUmask(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
-		<-j.finishedCh
+		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
 	select {

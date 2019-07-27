@@ -67,7 +67,10 @@ func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *J
 	job.cfg = cfg
 	// Whether to start this program at launch or not
 	job.ParseAtLaunch(cfg)
-	for _, inst := range job.Instances {
+	for i := 0; i < instances; i++ {
+		var inst Instance
+		job.Instances[i] = &inst
+		// for _, inst := range job.Instances {
 		// an id to uniquely identify the Jobess
 		inst.ParseID(cfg, ids)
 		// The command to use to launch the program

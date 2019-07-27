@@ -12,7 +12,9 @@ type Manager struct {
 
 //NewManager create Manager struct
 func NewManager() *Manager {
-	return &Manager{}
+	return &Manager{
+		Jobs: make(map[int]*Job),
+	}
 }
 
 //AddSingleJob add single job
