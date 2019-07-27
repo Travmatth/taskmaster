@@ -54,60 +54,60 @@ func Check(e error) {
 
 func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *Job {
 	instances, err := strconv.Atoi(cfg.Instances)
-	if err != nil && instances != "" {
+	if err != nil && cfg.Instances != "" {
 		fmt.Print("Job", cfg)
 		fmt.Printf(INSTANCESMSG, cfg.Instances)
 		os.Exit(1)
-	} else if instances == "" {
+	} else if cfg.Instances == "" {
 		instances = 1
 	}
 	job.Instances = make([]*Instance, instances)
 	job.pool = instances
-	for _, instance := range job.Instances {
+	// Add config to job struct
+	job.cfg = cfg
+	// Whether to start this program at launch or not
+	job.ParseAtLaunch(cfg)
+	for _, inst := range job.Instances {
 		// an id to uniquely identify the Jobess
-		instance.ParseID(cfg, ids)
+		inst.ParseID(cfg, ids)
 		// The command to use to launch the program
-		instance.args = strings.Fields(cfg.Command)
+		inst.args = strings.Fields(cfg.Command)
 		// The number of Jobesses to start and keep running
-		instance.ParseInt(cfg, "Instances", 1, INSTANCESMSG)
-		// Whether to start this program at launch or not
-		instance.ParseAtLaunch(cfg)
+		inst.ParseInt(cfg, "Instances", 1, INSTANCESMSG)
 		// Whether the program should be restarted always, never, or on unexpected exits only
-		instance.ParserestartPolicy(cfg)
+		inst.ParserestartPolicy(cfg)
 		// Which return codes represent an "expected" exit Status
-		instance.ParseInt(cfg, "ExpectedExit", 0, EXPECTEDEXITMSG)
+		inst.ParseInt(cfg, "ExpectedExit", 0, EXPECTEDEXITMSG)
 		// How long the program should be running after it’s started for it to be considered "successfully started"
-		instance.ParseInt(cfg, "StartCheckup", 1, STARTCHECKUPMSG)
+		inst.ParseInt(cfg, "StartCheckup", 1, STARTCHECKUPMSG)
 		// How many times a restart should be attempted before aborting
-		// instance.ParseInt(cfg, "MaxRestarts", 0, MAXRESTARTSMSG)
+		// inst.ParseInt(cfg, "MaxRestarts", 0, MAXRESTARTSMSG)
 		if max, err := strconv.Atoi(cfg.MaxRestarts); err == nil {
-			instance.MaxRestarts = int32(max)
+			inst.MaxRestarts = int32(max)
 		} else {
-			instance.MaxRestarts = 0
+			inst.MaxRestarts = 0
 		}
-		instance.Restarts = new(int32)
+		inst.Restarts = new(int32)
 		// Which signal should be used to stop (i.e. exit gracefully) the program
-		instance.StopSignal = instance.ParseSignal(cfg, STOPSIGNALMSG)
+		inst.StopSignal = inst.ParseSignal(cfg, STOPSIGNALMSG)
 		// How long to wait after a graceful stop before killing the program
-		// instance.ParseInt(cfg, "StopTimeout", 1, STOPTIMEOUTMSG)
+		// inst.ParseInt(cfg, "StopTimeout", 1, STOPTIMEOUTMSG)
 		if timeout, err := strconv.Atoi(cfg.StopTimeout); err == nil {
-			instance.StopTimeout = timeout
+			inst.StopTimeout = timeout
 		} else {
-			instance.StopTimeout = 5
+			inst.StopTimeout = 5
 		}
 		// Options to discard the program’s stdout/stderr or to redirect them to files
-		instance.ParseRedirections(cfg)
+		inst.ParseRedirections(cfg)
 		// Environment variables to set before launching the program
-		instance.EnvVars = strings.Fields(cfg.EnvVars)
+		inst.EnvVars = strings.Fields(cfg.EnvVars)
 		// A working directory to set before launching the program
-		instance.WorkingDir = cfg.WorkingDir
+		inst.WorkingDir = cfg.WorkingDir
 		// An umask to set before launching the program
-		instance.ParseInt(cfg, "Umask", defaultUmask, UMASKMSG)
+		inst.ParseInt(cfg, "Umask", defaultUmask, UMASKMSG)
 		// Add conditional var to struct
-		instance.condition = sync.NewCond(&instance.mutex)
-		instance.finishedCh = make(chan struct{})
-		// Add config to job struct
-		instance.cfg = cfg
+		inst.condition = sync.NewCond(&inst.mutex)
+		inst.finishedCh = make(chan struct{})
 	}
 	return job
 }

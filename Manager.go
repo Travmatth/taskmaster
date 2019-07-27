@@ -6,22 +6,20 @@ import (
 )
 
 type Manager struct {
-	Jobs map[int][]*Job
+	Jobs map[int]*Job
 	lock sync.Mutex
 }
 
 //NewManager create Manager struct
 func NewManager() *Manager {
-	return &Manager{
-		Jobs: make(map[int]*Job),
-	}
+	return &Manager{}
 }
 
 //AddSingleJob add single job
-func (m *Manager) AddSingleJob(job []*Job) {
+func (m *Manager) AddSingleJob(job *Job) {
 	defer m.lock.Unlock()
 	m.lock.Lock()
-	m.Jobs[job[0].ID] = job
+	m.Jobs[job.ID] = job
 }
 
 //AddMultiJob adds multiple jobs
@@ -34,10 +32,12 @@ func (m *Manager) AddMultiJob(jobs []*Job) {
 }
 
 //RemoveJob removes single job
-func (m *Manager) RemoveJob(id int) []*Job {
+func (m *Manager) RemoveJob(id int) *Job {
 	defer m.lock.Unlock()
 	m.lock.Lock()
-	delete(m.Jobs, job.ID)
+	job := m.Jobs[id]
+	delete(m.Jobs, id)
+	return job
 }
 
 //RestartJob restarts specified job
@@ -45,7 +45,7 @@ func (m *Manager) RestartJob(id int) {
 }
 
 //GetJob retrieves job
-func (m *Manager) GetJob(id int) ([]*Job, error) {
+func (m *Manager) GetJob(id int) (*Job, error) {
 	defer m.lock.Unlock()
 	m.lock.Lock()
 	if job, ok := m.Jobs[id]; ok {

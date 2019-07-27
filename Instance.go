@@ -1,3 +1,5 @@
+package main
+
 import (
 	"fmt"
 	"os"
@@ -35,7 +37,6 @@ type Instance struct {
 	JobID         int
 	InstanceID    int
 	args          []string
-	AtLaunch      bool
 	restartPolicy int
 	ExpectedExit  int
 	StartCheckup  int
@@ -174,7 +175,7 @@ func (i *Instance) Run(callback func()) {
 			i.ChangeStatus(PROCBACKOFF)
 		}
 		if atomic.LoadInt32(i.Restarts) >= i.MaxRestarts {
-			i.JobCreateFailure(callback, fmt.Sprintf("Failed to start Job %d maximum retries reached", i.ID))
+			i.JobCreateFailure(callback, fmt.Sprintf("Failed to start %s maximum retries reached", i))
 			break
 		} else {
 			Log.Info(i, "Start failed, restarting")

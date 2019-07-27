@@ -4,11 +4,13 @@ type Job struct {
 	ID        int
 	Instances []*Instance
 	pool      int
+	cfg       *JobConfig
+	AtLaunch  bool
 }
 
 func (j *Job) Start(wait bool) {
 	for _, instance := range j.Instances {
-		instance.start(wait)
+		instance.StartInstance(wait)
 	}
 }
 

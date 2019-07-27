@@ -14,7 +14,7 @@ import (
 ParseID parses the config struct to set the Job ID
 or exit with error if incorrectly set
 */
-func (p *Job) ParseID(c *JobConfig, ids map[int]bool) {
+func (i *Instance) ParseID(c *JobConfig, ids map[int]bool) {
 	if c.ID == "" {
 		fmt.Println("Error: ID must be specified")
 	} else if val, err := strconv.Atoi(c.ID); err != nil {
@@ -23,7 +23,7 @@ func (p *Job) ParseID(c *JobConfig, ids map[int]bool) {
 		fmt.Println("Error: ID must be unique")
 	} else {
 		ids[val] = true
-		p.ID = val
+		i.JobID = val
 		return
 	}
 	os.Exit(1)
@@ -32,16 +32,16 @@ func (p *Job) ParseID(c *JobConfig, ids map[int]bool) {
 /*
 ParseInt uses https://golang.org/pkg/reflect/ to dynamically set struct member to integer
 */
-func (p *Job) ParseInt(c *JobConfig, member string, defaultVal int, message string) {
+func (i *Instance) ParseInt(c *JobConfig, member string, defaultVal int, message string) {
 	cfgVal, _ := reflections.GetField(c, member)
 
 	if cfgVal == "" {
-		p.Umask = defaultVal
+		i.Umask = defaultVal
 	} else if val, err := strconv.Atoi(cfgVal.(string)); err != nil {
 		fmt.Printf(message, cfgVal)
 		os.Exit(1)
 	} else {
-		reflections.SetField(p, member, val)
+		reflections.SetField(i, member, val)
 	}
 }
 
@@ -60,15 +60,15 @@ func (j *Job) ParseAtLaunch(c *JobConfig) {
 ParserestartPolicy parses the config struct to set the restart policy
 or exit with error if incorrectly set
 */
-func (p *Job) ParserestartPolicy(c *JobConfig) {
+func (i *Instance) ParserestartPolicy(c *JobConfig) {
 	policy := strings.ToLower(c.RestartPolicy)
 	switch policy {
 	case "always":
-		p.restartPolicy = RESTARTALWAYS
+		i.restartPolicy = RESTARTALWAYS
 	case "never":
-		p.restartPolicy = RESTARTNEVER
+		i.restartPolicy = RESTARTNEVER
 	case "unexpected":
-		p.restartPolicy = RESTARTUNEXPECTED
+		i.restartPolicy = RESTARTUNEXPECTED
 	default:
 		fmt.Println("Error: Resart Policy must be one of: always | never | unexpected, recieved: ", c)
 		os.Exit(1)
@@ -79,7 +79,7 @@ func (p *Job) ParserestartPolicy(c *JobConfig) {
 ParseSignal parses the config struct to set the signal of the given Job member
 or exit with error if incorrectly set
 */
-func (p *Job) ParseSignal(c *JobConfig, message string) syscall.Signal {
+func (i *Instance) ParseSignal(c *JobConfig, message string) syscall.Signal {
 	if sig, ok := Signals[strings.ToUpper(c.StopSignal)]; ok {
 		return sig
 	}
@@ -88,7 +88,7 @@ func (p *Job) ParseSignal(c *JobConfig, message string) syscall.Signal {
 }
 
 //OpenRedir opens the given file for use in Jobess's redirections
-func (p *Job) OpenRedir(val string, flag int) *os.File {
+func (i *Instance) OpenRedir(val string, flag int) *os.File {
 	if val != "" {
 		f, err := os.OpenFile(val, flag, 0666)
 		if err != nil {
@@ -104,11 +104,11 @@ func (p *Job) OpenRedir(val string, flag int) *os.File {
 ParseRedirections parses the config struct to open the given filename and set *File member of
 Job struct, raises runtime error if incorrectly set
 */
-func (p *Job) ParseRedirections(c *JobConfig) {
+func (i *Instance) ParseRedirections(c *JobConfig) {
 	base := os.O_CREATE
-	p.Redirections = []*os.File{
-		p.OpenRedir(c.Redirections.Stdin, base|os.O_RDONLY),
-		p.OpenRedir(c.Redirections.Stdout, base|os.O_WRONLY|os.O_TRUNC),
-		p.OpenRedir(c.Redirections.Stderr, base|os.O_WRONLY|os.O_TRUNC),
+	i.Redirections = []*os.File{
+		i.OpenRedir(c.Redirections.Stdin, base|os.O_RDONLY),
+		i.OpenRedir(c.Redirections.Stdout, base|os.O_WRONLY|os.O_TRUNC),
+		i.OpenRedir(c.Redirections.Stderr, base|os.O_WRONLY|os.O_TRUNC),
 	}
 }

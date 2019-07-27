@@ -29,13 +29,13 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 	for _, cfg := range jobs {
 		if job, ok := s.Jobs[cfg.ID]; !ok {
 			newJobs = append(newJobs, cfg)
-		} else if diff := reflect.DeepEqual(cfg.cfg, job.cfg); diff {
+		} else if diff := reflect.DeepEqual(cfg, job.cfg); diff {
 			changedJobs = append(changedJobs, cfg)
 		} else {
-			job := s.Mgr.RemoveJob(cgf.ID)
+			job := s.Mgr.RemoveJob(cfg.ID)
 			currentJobs = append(currentJobs, job)
 		}
-		s.Mgr.RemoveJob(cfg)
+		s.Mgr.RemoveJob(cfg.ID)
 	}
 	for _, job := range s.Jobs {
 		oldJobs = append(oldJobs, job)
@@ -54,7 +54,7 @@ func (s *Supervisor) Reload(jobs []*Job) error {
 		job.Stop(false)
 	}
 	for _, job := range changed {
-		s.Mgr.RestartJob(job)
+		s.Mgr.RestartJob(job.ID)
 	}
 	for _, job := range next {
 		s.Mgr.AddSingleJob(job)
