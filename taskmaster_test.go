@@ -227,9 +227,10 @@ func TestStartTimeout(t *testing.T) {
 }
 
 func TestKillAfterIgnoredStopSignal(t *testing.T) {
-	file := "procfiles/KillAfterIgnoredStopSignal.yaml"
+	proc := "procfiles/KillAfterIgnoredStopSignal.yaml"
+	test := "test/KillAfterIgnoredStopSignal.test"
 	ch := make(chan error)
-	s := PrepareJobs(t, file)
+	s := PrepareJobs(t, proc)
 	go func() {
 		if err := s.StartJob(0); err != nil {
 			ch <- err
@@ -245,18 +246,19 @@ func TestKillAfterIgnoredStopSignal(t *testing.T) {
 		if err != nil {
 			t.Errorf("Err not nil:\n%s", Buf.String())
 		} else {
-			if contents, err := FileContains("test/KillAfterIgnoredStopSignal.test"); err != nil {
+			if contents, err := FileContains(test); err != nil {
 				t.Errorf("Error: failed to open file with error %s", err)
 			} else if contents != "INT caught" {
 				t.Errorf("Error: incorrect file contents %s", contents)
 			} else {
 				LogsContain(t, Buf.String(), []string{
-					"Job 0 Successfully Started",
-					"Sending Signal interrupt to Job 0",
-					"Job 0 did not stop after timeout of  3 seconds SIGKILL issued",
-					"Job 0 exited with status: signal: killed",
-					"Job 0 stopped by user, not restarting",
+					"Job 0 Instance 0 : Sending Signal interrupt",
+					"Job 0 Instance 0 : Successfully Started after 2 second(s)",
+					"Job 0 Instance 0 : did not stop after timeout of  3 seconds SIGKILL issued",
+					"Job 0 Instance 0 : exited with status: signal: killed",
+					"Job 0 Instance 0 : stopped by user, not restarting",
 				})
+				os.Remove(test)
 			}
 		}
 	case <-time.After(time.Duration(10) * time.Second):
