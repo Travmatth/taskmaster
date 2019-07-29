@@ -109,21 +109,21 @@ func TestRestartAfterUnexpectedExit(t *testing.T) {
 	select {
 	case <-ch:
 		LogsContain(t, Buf.String(), []string{
-			"Job 0 Successfully Started",
-			"Job 0 exited with status: exit status 1",
-			"Job 0 Encountered unexpected exit code 1 , restarting",
-			"Job 0 Successfully Started",
-			"Job 0 exited with status: exit status 1",
-			"Job 0 Encountered unexpected exit code 1 , restarting",
-			"Job 0 Successfully Started",
-			"Job 0 exited with status: exit status 1",
-			"Job 0 Encountered unexpected exit code 1 , restarting",
-			"Job 0 Successfully Started",
-			"Job 0 exited with status: exit status 1",
-			"Job 0 Encountered unexpected exit code 1 , restarting",
-			"Job 0 Successfully Started",
-			"Job 0 exited with status: exit status 1",
-			"Job 0 Encountered unexpected exit code 1 , restarting",
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+			"Job 0 Instance 0 : Encountered unexpected exit code 1 , restarting",
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+			"Job 0 Instance 0 : Encountered unexpected exit code 1 , restarting",
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+			"Job 0 Instance 0 : Encountered unexpected exit code 1 , restarting",
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+			"Job 0 Instance 0 : Encountered unexpected exit code 1 , restarting",
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+			"Job 0 Instance 0 : Encountered unexpected exit code 1 , restarting",
 		})
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
