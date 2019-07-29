@@ -5,7 +5,7 @@
   restartpolicy: always
   expectedexit: 0
   startcheckup: 0
-  maxrestarts: 5
+  maxrestarts: 0
   stopsignal: SIGINT
   stoptimeout: 5
   redirections:

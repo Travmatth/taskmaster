@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -84,15 +83,9 @@ func TestRestartAfterFailedStart(t *testing.T) {
 	}()
 	select {
 	case <-ch:
-		logs := Buf.String()
-		str := "Job 0 failed to start with error: fork\\/exec foo: no such file or directory"
-		regex := regexp.MustCompile(str)
-		matches := len(regex.FindAllString(logs, -1)) == 6
-		matches = matches && strings.Contains(logs, "Creation of")
-		matches = matches && len(strings.Split(logs, "\n")) == 7
-		if !matches {
-			t.Errorf(fmt.Sprintf("Error: Incorrect Logs:\n%s", logs))
-		}
+		LogsContain(t, Buf.String(), []string{
+			"Job 0 Instance 0 : Creation of failed: failed to start with error: fork/exec foo: no such file or directory",
+		})
 	case <-time.After(time.Duration(20) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
 	}
