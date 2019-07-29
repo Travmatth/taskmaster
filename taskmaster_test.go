@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"time"
 )
@@ -165,11 +163,11 @@ func TestNoRestartAfterExit(t *testing.T) {
 	}()
 	select {
 	case <-ch:
-		logs := Buf.String()
-		str := "Job 0 Encountered unexpected exit code 1 , restarting"
-		if strings.Count(logs, str) > 1 {
-			t.Errorf(fmt.Sprintf("Error: Incorrect Logs:\n%s", logs))
-		}
+		LogsContain(t, Buf.String(), []string{
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+			"Job 0 Instance 0 : restart policy specifies do not restart",
+		})
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestNoRestartAfterExit timed out, logs:\n%s", Buf.String())
 	}
@@ -191,14 +189,14 @@ func TestRestartAlways(t *testing.T) {
 	select {
 	case <-ch:
 		LogsContain(t, Buf.String(), []string{
-			"Job 0 Successfully Started",
-			"Job 0 exited with status: exit status 1",
-			"Job 0 Successfully Started",
-			"Job 0 exited with status: exit status 1",
-			"Job 0 Successfully Started",
-			"Sending Signal interrupt to Job 0",
-			"Job 0 exited with status: signal: interrupt",
-			"Job 0 stopped by user, not restarting",
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : Sending Signal interrupt",
+			"Job 0 Instance 0 : exited with status: signal: interrupt",
+			"Job 0 Instance 0 : stopped by user, not restarting",
 		})
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestNoRestartAfterExit timed out, logs:\n%s", Buf.String())
@@ -433,8 +431,7 @@ func TestStartStopMultipleInstances(t *testing.T) {
 	select {
 	case err := <-ch:
 		if err != nil {
-			fmt.Println(err)
-			t.Errorf("Err not nil:\n%s", Buf.String())
+			t.Errorf("Err not nil:\n%s\nLogs:\n%s\n", Buf.String(), err)
 		} else {
 			LogsContain(t, Buf.String(), []string{
 				"Job 0 Successfully Started",
