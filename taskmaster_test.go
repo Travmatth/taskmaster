@@ -143,16 +143,10 @@ func TestNoRestartAfterExpectedExit(t *testing.T) {
 	}()
 	select {
 	case <-ch:
-		logs := Buf.String()
-		str := "Job 0 Encountered unexpected exit code 1 , restarting"
-		if strings.Contains(logs, str) {
-			t.Errorf(fmt.Sprintf("Error: Incorrect Logs:\n%s", logs))
-		} else {
-			LogsContain(t, Buf.String(), []string{
-				"Job 0 Successfully Started",
-				"Job 0 exited with status: exit status 1",
-			})
-		}
+		LogsContain(t, Buf.String(), []string{
+			"Job 0 Instance 0 : Successfully Started with no start checkup",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+		})
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestNoRestartAfterExpectedExit timed out, log:\n%s", Buf.String())
 	}
