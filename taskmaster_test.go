@@ -364,9 +364,10 @@ func TestEnvVars(t *testing.T) {
 }
 
 func TestSetWorkingDir(t *testing.T) {
-	file := "procfiles/SetWorkingDir.yaml"
+	procFile := "procfiles/SetWorkingDir.yaml"
+	testFile := "test/SetWorkingDir.test"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, file)
+	s := PrepareJobs(t, procFile)
 	go func() {
 		j, _ := s.Mgr.GetJob(0)
 		s.StartAllJobs()
@@ -376,16 +377,17 @@ func TestSetWorkingDir(t *testing.T) {
 	select {
 	case <-ch:
 		logs := Buf.String()
-		if file, err := FileContains("test/SetWorkingDir.test"); err != nil {
+		if contents, err := FileContains(testFile); err != nil {
 			t.Errorf("Error: file error\n%s\nlogs:%s", err, logs)
-		} else if file != "exists" {
-			t.Errorf("Error: incorrect string\n%s\nlogs:%s", file, logs)
+		} else if contents != "exists" {
+			t.Errorf("Error: incorrect string\n%s\nlogs:%s", contents, logs)
 		} else {
 			LogsContain(t, logs, []string{
-				"Job 0 Successfully Started",
-				"Job 0 exited with status: exit status 0",
-				"Job 0 restart policy specifies do not restart",
+				"Job 0 Instance 0 : Successfully Started with no start checkup",
+				"Job 0 Instance 0 : exited with status: exit status 0",
+				"Job 0 Instance 0 : restart policy specifies do not restart",
 			})
+			os.Remove(testFile)
 		}
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestRedirectStdout timed out, logs:\n%s", Buf.String())
