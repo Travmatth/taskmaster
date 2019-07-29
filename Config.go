@@ -54,6 +54,8 @@ func Check(e error) {
 
 func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *Job {
 	instances, err := strconv.Atoi(cfg.Instances)
+	// an id to uniquely identify the Jobess
+	job.ParseID(cfg, ids)
 	if err != nil && cfg.Instances != "" {
 		fmt.Print("Job", cfg)
 		fmt.Printf(INSTANCESMSG, cfg.Instances)
@@ -70,9 +72,8 @@ func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *J
 	for i := 0; i < instances; i++ {
 		var inst Instance
 		job.Instances[i] = &inst
-		// for _, inst := range job.Instances {
-		// an id to uniquely identify the Jobess
-		inst.ParseID(cfg, ids)
+		// ID to uniquely identify the Jobess
+		inst.JobID = job.ID
 		// The command to use to launch the program
 		inst.args = strings.Fields(cfg.Command)
 		// The number of Jobesses to start and keep running
@@ -126,7 +127,6 @@ func SetDefaults(configJobs []JobConfig) []*Job {
 	ids := make(map[int]bool)
 	Jobs := []*Job{}
 	umask := GetDefaultUmask()
-
 	for _, cfg := range configJobs {
 		var job Job
 		Jobs = append(Jobs, SetDefault(&cfg, &job, ids, umask))

@@ -37,7 +37,7 @@ func TestStartStopSingle(t *testing.T) {
 			t.Errorf("Err not nil:\n%s\n%s", err, Buf.String())
 		} else {
 			LogsContain(t, Buf.String(), []string{
-				"Job 0 Instance 0 : Successfully Started after 1 seconds",
+				"Job 0 Instance 0 : Successfully Started after 1 second(s)",
 				"Job 0 Instance 0 : Sending Signal interrupt",
 				"Job 0 Instance 0 : exited with status: signal: interrupt",
 				"Job 0 Instance 0 : stopped by user, not restarting",
@@ -49,7 +49,7 @@ func TestStartStopSingle(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestStartStopMulti(t *testing.T) {
+func TestStartStopMultiJobs(t *testing.T) {
 	file := "procfiles/StartStopMulti.yaml"
 	ch := make(chan struct{})
 	s := PrepareJobs(t, file)
@@ -61,14 +61,14 @@ func TestStartStopMulti(t *testing.T) {
 	select {
 	case <-ch:
 		LogsContain(t, Buf.String(), []string{
-			"Job 1 Successfully Started",
-			"Sending Signal interrupt to Job 1",
-			"Job 1 exited with status: signal: interrupt",
-			"Job 1 stopped by user, not restarting",
-			"Job 2 Successfully Started",
-			"Sending Signal interrupt to Job 2",
-			"Job 2 exited with status: signal: interrupt",
-			"Job 2 stopped by user, not restarting",
+			"Job 1 Instance 0 : Successfully Started after 1 second(s)",
+			"Job 2 Instance 0 : Successfully Started after 1 second(s)",
+			"Job 1 Instance 0 : Sending Signal interrupt",
+			"Job 2 Instance 0 : Sending Signal interrupt",
+			"Job 1 Instance 0 : exited with status: signal: interrupt",
+			"Job 2 Instance 0 : exited with status: signal: interrupt",
+			"Job 1 Instance 0 : stopped by user, not restarting",
+			"Job 2 Instance 0 : stopped by user, not restarting",
 		})
 	case <-time.After(time.Duration(5) * time.Second):
 		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())

@@ -14,7 +14,7 @@ import (
 ParseID parses the config struct to set the Job ID
 or exit with error if incorrectly set
 */
-func (i *Instance) ParseID(c *JobConfig, ids map[int]bool) {
+func (j *Job) ParseID(c *JobConfig, ids map[int]bool) {
 	if c.ID == "" {
 		fmt.Println("Error: ID must be specified")
 	} else if val, err := strconv.Atoi(c.ID); err != nil {
@@ -23,7 +23,7 @@ func (i *Instance) ParseID(c *JobConfig, ids map[int]bool) {
 		fmt.Println("Error: ID must be unique")
 	} else {
 		ids[val] = true
-		i.JobID = val
+		j.ID = val
 		return
 	}
 	os.Exit(1)

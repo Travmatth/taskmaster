@@ -245,7 +245,7 @@ func (i *Instance) MonitorProgramRunning(callback func(), end time.Time, monitor
 	i.mutex.Lock()
 	progState := atomic.LoadInt32(program)
 	if progState == 0 && i.Status == PROCSTART {
-		Log.Info(i, ": Successfully Started after", i.StartCheckup, "seconds")
+		Log.Info(i, ": Successfully Started after", i.StartCheckup, "second(s)")
 		i.Status = PROCRUNNING
 		callback()
 	} else {
