@@ -37,10 +37,10 @@ func TestStartStopSingle(t *testing.T) {
 			t.Errorf("Err not nil:\n%s\n%s", err, Buf.String())
 		} else {
 			LogsContain(t, Buf.String(), []string{
-				"Job 0 Successfully Started",
-				"Sending Signal interrupt to Job 0",
-				"Job 0 exited with status: signal: interrupt",
-				"Job 0 stopped by user, not restarting",
+				"Job 0 Instance 0 : Successfully Started after 1 seconds",
+				"Job 0 Instance 0 : Sending Signal interrupt",
+				"Job 0 Instance 0 : exited with status: signal: interrupt",
+				"Job 0 Instance 0 : stopped by user, not restarting",
 			})
 		}
 	case <-time.After(time.Duration(5) * time.Second):
