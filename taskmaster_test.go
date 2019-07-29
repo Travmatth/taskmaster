@@ -215,10 +215,10 @@ func TestStartTimeout(t *testing.T) {
 	select {
 	case <-ch:
 		LogsContain(t, Buf.String(), []string{
-			"Job 0 exited with status: exit status 1",
-			"Job 0 monitor failed, program exit:  1  with job status 2",
-			"Job 0 Start failed, restarting",
-			"Job 0 Successfully Started",
+			"Job 0 Instance 0 : exited with status: exit status 1",
+			"Job 0 Instance 0 : monitor failed, program exit:  1  with job status 2",
+			"Job 0 Instance 0 : Start failed, restarting",
+			"Job 0 Instance 0 : Successfully Started after 2 second(s)",
 		})
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
