@@ -42,9 +42,9 @@ func MockLogger(out string) {
 func PrepareJobs(t *testing.T, file string) *Supervisor {
 	Buf.Reset()
 	s := NewSupervisor("", NewManager())
-	if Buf, err := LoadFile(file); err != nil {
+	if yaml, err := LoadFile(file); err != nil {
 		panic(err)
-	} else if configs, err := LoadJobs(Buf); err != nil {
+	} else if configs, err := LoadJobs(yaml); err != nil {
 		panic(err)
 	} else {
 		jobs := SetDefaults(configs)

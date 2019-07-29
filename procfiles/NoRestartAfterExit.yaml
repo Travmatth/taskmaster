@@ -1,4 +1,4 @@
-- id: 0
+- id: 6
   command: ./test/expectedexit.sh
   instances: 1
   atLaunch: true

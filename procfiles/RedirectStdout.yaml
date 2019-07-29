@@ -1,4 +1,4 @@
-- id: 0
+- id: 10
   command: ./test/write_stdout.sh
   instances: 1
   atLaunch: true

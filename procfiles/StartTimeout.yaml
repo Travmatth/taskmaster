@@ -1,4 +1,4 @@
-- id: 0
+- id: 8
   command: ./test/starttimeout.sh
   instances: 1
   atLaunch: true

@@ -1,4 +1,4 @@
-- id: 0
+- id: 3
   command: foo
   instances: 1
   atLaunch: true

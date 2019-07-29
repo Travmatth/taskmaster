@@ -1,4 +1,4 @@
-- id: 0
+- id: 4
   command: ./test/startfails.sh
   instances: 1
   atLaunch: true

@@ -7,7 +7,6 @@ import (
 
 type Supervisor struct {
 	Config  string
-	Jobs    map[int]*Job
 	Mgr     *Manager
 	lock    sync.Mutex
 	restart bool
@@ -27,7 +26,7 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 	s.lock.Lock()
 	currentJobs, oldJobs, changedJobs, newJobs := []*Job{}, []*Job{}, []*Job{}, []*Job{}
 	for _, cfg := range jobs {
-		if job, ok := s.Jobs[cfg.ID]; !ok {
+		if job, ok := s.Mgr.Jobs[cfg.ID]; !ok {
 			newJobs = append(newJobs, cfg)
 		} else if diff := reflect.DeepEqual(cfg, job.cfg); diff {
 			changedJobs = append(changedJobs, cfg)
@@ -37,7 +36,7 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 		}
 		s.Mgr.RemoveJob(cfg.ID)
 	}
-	for _, job := range s.Jobs {
+	for _, job := range s.Mgr.Jobs {
 		oldJobs = append(oldJobs, job)
 	}
 	return currentJobs, oldJobs, changedJobs, newJobs

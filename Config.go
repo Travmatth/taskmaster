@@ -53,7 +53,7 @@ func Check(e error) {
 
 func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *Job {
 	instances, err := strconv.Atoi(cfg.Instances)
-	// an id to uniquely identify the Jobess
+	// an id to uniquely identify the Jobs
 	job.ParseID(cfg, ids)
 	if err != nil && cfg.Instances != "" {
 		os.Exit(1)
@@ -69,7 +69,7 @@ func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *J
 	for i := 0; i < instances; i++ {
 		var inst Instance
 		job.Instances[i] = &inst
-		// ID to uniquely identify the Jobess
+		// ID to uniquely identify the Job & instance
 		inst.JobID = job.ID
 		inst.InstanceID = i
 		// The command to use to launch the program
