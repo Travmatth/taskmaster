@@ -71,6 +71,7 @@ func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *J
 		job.Instances[i] = &inst
 		// ID to uniquely identify the Jobess
 		inst.JobID = job.ID
+		inst.InstanceID = i
 		// The command to use to launch the program
 		inst.args = strings.Fields(cfg.Command)
 		// The number of Jobesses to start and keep running

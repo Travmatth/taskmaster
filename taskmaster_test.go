@@ -428,9 +428,9 @@ func TestUmask(t *testing.T) {
 }
 
 func TestStartStopMultipleInstances(t *testing.T) {
-	file := "procfiles/StartStopMultipleInstances.yaml"
+	procFile := "procfiles/StartStopMultipleInstances.yaml"
 	ch := make(chan error)
-	s := PrepareJobs(t, file)
+	s := PrepareJobs(t, procFile)
 	go func() {
 		if err := s.StartJob(0); err != nil {
 			ch <- err
@@ -446,10 +446,14 @@ func TestStartStopMultipleInstances(t *testing.T) {
 			t.Errorf("Err not nil:\n%s\nLogs:\n%s\n", Buf.String(), err)
 		} else {
 			LogsContain(t, Buf.String(), []string{
-				"Job 0 Successfully Started",
-				"Sending Signal interrupt to Job 0",
-				"Job 0 exited with status: signal: interrupt",
-				"Job 0 stopped by user, not restarting",
+				"Job 0 Instance 0 : Successfully Started after 1 second(s)",
+				"Job 0 Instance 1 : Successfully Started after 1 second(s)",
+				"Job 0 Instance 0 : Sending Signal interrupt",
+				"Job 0 Instance 1 : Sending Signal interrupt",
+				"Job 0 Instance 0 : exited with status: signal: interrupt",
+				"Job 0 Instance 1 : exited with status: signal: interrupt",
+				"Job 0 Instance 0 : stopped by user, not restarting",
+				"Job 0 Instance 1 : stopped by user, not restarting",
 			})
 		}
 	case <-time.After(time.Duration(5) * time.Second):
