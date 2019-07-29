@@ -141,7 +141,7 @@ func (i *Instance) Run(callback func()) {
 		atomic.AddInt32(i.Restarts, 1)
 		if err := i.CreateJob(); err != nil {
 			if atomic.LoadInt32(i.Restarts) > i.MaxRestarts {
-				errStr := fmt.Sprintf("%s : failed to start with error: %s", i, err)
+				errStr := fmt.Sprintf("failed to start with error: %s", err)
 				i.JobCreateFailure(callback, errStr)
 				break
 			} else {
