@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -57,8 +56,6 @@ func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *J
 	// an id to uniquely identify the Jobess
 	job.ParseID(cfg, ids)
 	if err != nil && cfg.Instances != "" {
-		fmt.Print("Job", cfg)
-		fmt.Printf(INSTANCESMSG, cfg.Instances)
 		os.Exit(1)
 	} else if cfg.Instances == "" {
 		instances = 1

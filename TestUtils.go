@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -60,7 +59,6 @@ func LogsContain(t *testing.T, logs string, logStrings []string) {
 	fullLogs := logs
 	for _, str := range logStrings {
 		if !strings.Contains(logs, str) {
-			fmt.Println(logs)
 			ok = false
 			break
 		}
