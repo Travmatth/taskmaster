@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -55,11 +54,9 @@ func PrepareJobs(t *testing.T, file string) *Supervisor {
 }
 
 func LogsContain(t *testing.T, logs string, logStrings []string) {
-	for _, str := range logStrings {
-		if !strings.Contains(logs, str) {
-			fmt.Println(logs)
-			t.Errorf("Logs should contain: %s", str)
-		}
+	formattedLogs := strings.Join(logStrings, "\n") + "\n"
+	if logs != formattedLogs {
+		t.Errorf("Log Error: Logs should contain:\n%s\nContains:\n%s\n", strings.Join(logStrings, "\n"), logs)
 	}
 }
 
