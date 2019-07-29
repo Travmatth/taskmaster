@@ -53,5 +53,5 @@ func (m *Manager) GetJob(id int) (*Job, error) {
 	if job, ok := m.Jobs[id]; ok {
 		return job, nil
 	}
-	return nil, fmt.Errorf("Error: No Job with ID: %d", id)
+	return nil, fmt.Errorf("Manager Error: No Job with ID: %d", id)
 }

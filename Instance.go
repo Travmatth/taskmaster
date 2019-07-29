@@ -89,19 +89,19 @@ func (i *Instance) StartInstance(wait bool) {
 				}
 			})
 			if i.Stopped {
-				Log.Info(i, "stopped by user, not restarting")
+				Log.Info(i, ": stopped by user, not restarting")
 				break
 			} else if i.process == nil {
 				break
 			} else if i.restartPolicy == RESTARTNEVER {
-				Log.Info(i, "restart policy specifies do not restart")
+				Log.Info(i, ": restart policy specifies do not restart")
 				break
 			} else if i.restartPolicy == RESTARTUNEXPECTED {
 				end := true
 				i.mutex.RLock()
 				exit := i.state.ExitCode()
 				if exit != i.ExpectedExit {
-					Log.Info(i, "Encountered unexpected exit code", exit, ", restarting")
+					Log.Info(i, ": Encountered unexpected exit code", exit, ", restarting")
 					end = false
 				}
 				i.mutex.RUnlock()
@@ -125,7 +125,7 @@ func (i *Instance) Run(callback func()) {
 	defer i.mutex.Unlock()
 	i.mutex.Lock()
 	if i.PIDExists() {
-		Log.Info(i, "is already running")
+		Log.Info(i, ": already running")
 		callback()
 		return
 	}
@@ -141,11 +141,11 @@ func (i *Instance) Run(callback func()) {
 		atomic.AddInt32(i.Restarts, 1)
 		if err := i.CreateJob(); err != nil {
 			if atomic.LoadInt32(i.Restarts) > i.MaxRestarts {
-				errStr := fmt.Sprintf("%s failed to start with error: %s", i, err)
+				errStr := fmt.Sprintf("%s : failed to start with error: %s", i, err)
 				i.JobCreateFailure(callback, errStr)
 				break
 			} else {
-				Log.Info(i, "failed to start with error:", err)
+				Log.Info(i, ": failed to start with error:", err)
 				i.ChangeStatus(PROCBACKOFF)
 				continue
 			}
@@ -153,7 +153,7 @@ func (i *Instance) Run(callback func()) {
 		monitorExited := int32(0)
 		programExited := int32(0)
 		if i.StartCheckup <= 0 {
-			Log.Info(i, "Successfully Started")
+			Log.Info(i, ": Successfully Started with no start checkup")
 			i.ChangeStatus(PROCRUNNING)
 			go callbackWrapper()
 		} else {
@@ -175,10 +175,10 @@ func (i *Instance) Run(callback func()) {
 			i.ChangeStatus(PROCBACKOFF)
 		}
 		if atomic.LoadInt32(i.Restarts) >= i.MaxRestarts {
-			i.JobCreateFailure(callback, fmt.Sprintf("Failed to start %s maximum retries reached", i))
+			i.JobCreateFailure(callback, fmt.Sprintf("%s : Failed to start maximum retries reached", i))
 			break
 		} else {
-			Log.Info(i, "Start failed, restarting")
+			Log.Info(i, ": Start failed, restarting")
 		}
 	}
 }
@@ -203,9 +203,9 @@ func (i *Instance) CreateJob() error {
 func (i *Instance) WaitForExit() {
 	state, err := i.process.Wait()
 	if err != nil {
-		Log.Info(i, "error waiting for exit: ", err)
+		Log.Info(i, ": error waiting for exit: ", err)
 	} else if state != nil {
-		Log.Info(i, "exited with status:", state)
+		Log.Info(i, ": exited with status:", state)
 	}
 	i.mutex.Lock()
 	i.state = state
@@ -231,7 +231,7 @@ func (i *Instance) PIDExists() bool {
 
 //JobCreateFailure registers the failure of attempt to create job
 func (i *Instance) JobCreateFailure(callback func(), errStr string) {
-	Log.Info("Creation of", i, "failed:", errStr)
+	Log.Info(i, ": Creation of", "failed:", errStr)
 	callback()
 }
 
@@ -245,11 +245,11 @@ func (i *Instance) MonitorProgramRunning(callback func(), end time.Time, monitor
 	i.mutex.Lock()
 	progState := atomic.LoadInt32(program)
 	if progState == 0 && i.Status == PROCSTART {
-		Log.Info(i, "Successfully Started")
+		Log.Info(i, ": Successfully Started after", i.StartCheckup, "seconds")
 		i.Status = PROCRUNNING
 		callback()
 	} else {
-		Log.Debug(i, "monitor failed, program exit: ", progState, " with job status", i.Status)
+		Log.Debug(i, ": monitor failed, program exit: ", progState, " with job status", i.Status)
 	}
 }
 
@@ -266,13 +266,13 @@ func (i *Instance) StopInstance(wait bool) {
 	go func() {
 		i.mutex.RLock()
 		if i.process != nil {
-			Log.Info("Sending Signal", i.StopSignal, "to", i)
+			Log.Info(i, ": Sending Signal", i.StopSignal)
 			i.process.Signal(i.StopSignal)
 		}
 		i.mutex.RUnlock()
 		select {
 		case <-time.After(time.Duration(i.StopTimeout) * time.Second):
-			Log.Info(i, "did not stop after timeout of ", i.StopTimeout, "seconds SIGKILL issued")
+			Log.Info(i, ": did not stop after timeout of ", i.StopTimeout, "seconds SIGKILL issued")
 			if i.process != nil {
 				i.process.Signal(Signals["SIGKILL"])
 				<-i.finishedCh
