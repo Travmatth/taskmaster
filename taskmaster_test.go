@@ -213,7 +213,9 @@ func TestStartTimeout(t *testing.T) {
 	ch := make(chan struct{})
 	s := PrepareJobs(t, file)
 	go func() {
+		j, _ := s.Mgr.GetJob(8)
 		s.StartAllJobs()
+		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -223,6 +225,8 @@ func TestStartTimeout(t *testing.T) {
 			"Job 8 Instance 0 : monitor failed, program exit:  1  with job status 2",
 			"Job 8 Instance 0 : Start failed, restarting",
 			"Job 8 Instance 0 : Successfully Started after 2 second(s)",
+			"Job 8 Instance 0 : exited with status: exit status 0",
+			"Job 8 Instance 0 : restart policy specifies do not restart",
 		})
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
