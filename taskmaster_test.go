@@ -102,6 +102,7 @@ func TestRestartAfterUnexpectedExit(t *testing.T) {
 		<-j.Instances[0].finishedCh
 		<-j.Instances[0].finishedCh
 		<-j.Instances[0].finishedCh
+		<-j.Instances[0].finishedCh
 		time.Sleep(3)
 		ch <- struct{}{}
 	}()
@@ -123,6 +124,8 @@ func TestRestartAfterUnexpectedExit(t *testing.T) {
 			"Job 4 Instance 0 : Successfully Started with no start checkup",
 			"Job 4 Instance 0 : exited with status: exit status 1",
 			"Job 4 Instance 0 : Encountered unexpected exit code 1 , restarting",
+			"Job 4 Instance 0 : Successfully Started with no start checkup",
+			"Job 4 Instance 0 : exited with status: exit status 0",
 		})
 	case <-time.After(time.Duration(10) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
