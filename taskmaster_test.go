@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 func TestStartStopSingle(t *testing.T) {
 	file := "procfiles/StartStopSingle.yaml"
 	ch := make(chan error)
-	s := PrepareJobs(t, file)
+	s := PrepareSupervisor(t, file)
 	go func() {
 		if err := s.StartJob(0); err != nil {
 			ch <- err
@@ -49,7 +49,7 @@ func TestStartStopSingle(t *testing.T) {
 func TestStartStopMultiJobs(t *testing.T) {
 	file := "procfiles/StartStopMulti.yaml"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, file)
+	s := PrepareSupervisor(t, file)
 	go func() {
 		s.StartAllJobs()
 		s.StopAllJobs()
@@ -74,7 +74,7 @@ func TestStartStopMultiJobs(t *testing.T) {
 func TestRestartAfterFailedStart(t *testing.T) {
 	file := "procfiles/RestartAfterFailedStart.yaml"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, file)
+	s := PrepareSupervisor(t, file)
 	go func() {
 		s.StartAllJobs()
 		ch <- struct{}{}
@@ -93,7 +93,7 @@ func TestRestartAfterFailedStart(t *testing.T) {
 func TestRestartAfterUnexpectedExit(t *testing.T) {
 	file := "procfiles/RestartAfterUnexpectedExit.yaml"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, file)
+	s := PrepareSupervisor(t, file)
 	go func() {
 		j, _ := s.Mgr.GetJob(4)
 		s.StartAllJobs()
@@ -136,7 +136,7 @@ func TestRestartAfterUnexpectedExit(t *testing.T) {
 func TestNoRestartAfterExpectedExit(t *testing.T) {
 	file := "procfiles/NoRestartAfterExpectedExit.yaml"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, file)
+	s := PrepareSupervisor(t, file)
 	go func() {
 		j, _ := s.Mgr.GetJob(5)
 		s.StartAllJobs()
@@ -158,7 +158,7 @@ func TestNoRestartAfterExpectedExit(t *testing.T) {
 func TestNoRestartAfterExit(t *testing.T) {
 	file := "procfiles/NoRestartAfterExit.yaml"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, file)
+	s := PrepareSupervisor(t, file)
 	go func() {
 		j, _ := s.Mgr.GetJob(6)
 		s.StartAllJobs()
@@ -181,7 +181,7 @@ func TestNoRestartAfterExit(t *testing.T) {
 func TestRestartAlways(t *testing.T) {
 	file := "procfiles/RestartAlways.yaml"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, file)
+	s := PrepareSupervisor(t, file)
 	go func() {
 		j, _ := s.Mgr.GetJob(7)
 		s.StartAllJobs()
@@ -211,7 +211,7 @@ func TestRestartAlways(t *testing.T) {
 func TestStartTimeout(t *testing.T) {
 	file := "procfiles/StartTimeout.yaml"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, file)
+	s := PrepareSupervisor(t, file)
 	go func() {
 		j, _ := s.Mgr.GetJob(8)
 		s.StartAllJobs()
@@ -238,7 +238,7 @@ func TestKillAfterIgnoredStopSignal(t *testing.T) {
 	proc := "procfiles/KillAfterIgnoredStopSignal.yaml"
 	test := "test/KillAfterIgnoredStopSignal.test"
 	ch := make(chan error)
-	s := PrepareJobs(t, proc)
+	s := PrepareSupervisor(t, proc)
 	go func() {
 		if err := s.StartJob(9); err != nil {
 			ch <- err
@@ -279,7 +279,7 @@ func TestRedirectStdout(t *testing.T) {
 	procFile := "procfiles/RedirectStdout.yaml"
 	testFile := "test/RedirectStdout.test"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, procFile)
+	s := PrepareSupervisor(t, procFile)
 	go func() {
 		j, _ := s.Mgr.GetJob(10)
 		s.StartAllJobs()
@@ -311,7 +311,7 @@ func TestRedirectStderr(t *testing.T) {
 	procFile := "procfiles/RedirectStderr.yaml"
 	testFile := "test/RedirectStderr.test"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, procFile)
+	s := PrepareSupervisor(t, procFile)
 	go func() {
 		j, _ := s.Mgr.GetJob(11)
 		s.StartAllJobs()
@@ -343,7 +343,7 @@ func TestEnvVars(t *testing.T) {
 	procFile := "procfiles/EnvVars.yaml"
 	testFile := "test/EnvVars.test"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, procFile)
+	s := PrepareSupervisor(t, procFile)
 	go func() {
 		j, _ := s.Mgr.GetJob(12)
 		s.StartAllJobs()
@@ -375,7 +375,7 @@ func TestSetWorkingDir(t *testing.T) {
 	procFile := "procfiles/SetWorkingDir.yaml"
 	testFile := "test/SetWorkingDir.test"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, procFile)
+	s := PrepareSupervisor(t, procFile)
 	go func() {
 		j, _ := s.Mgr.GetJob(13)
 		s.StartAllJobs()
@@ -408,7 +408,7 @@ func TestUmask(t *testing.T) {
 	procFile := "procfiles/SetUmask.yaml"
 	testFile := "test/SetUmask.test"
 	ch := make(chan struct{})
-	s := PrepareJobs(t, procFile)
+	s := PrepareSupervisor(t, procFile)
 	go func() {
 		j, _ := s.Mgr.GetJob(14)
 		s.StartAllJobs()
@@ -439,7 +439,7 @@ func TestUmask(t *testing.T) {
 func TestStartStopMultipleInstances(t *testing.T) {
 	procFile := "procfiles/StartStopMultipleInstances.yaml"
 	ch := make(chan error)
-	s := PrepareJobs(t, procFile)
+	s := PrepareSupervisor(t, procFile)
 	go func() {
 		if err := s.StartJob(15); err != nil {
 			ch <- err

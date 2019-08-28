@@ -39,12 +39,20 @@ func MockLogger(out string) {
 	Log.SetBackend(leveledBackend)
 }
 
-func PrepareJobs(t *testing.T, file string) *Supervisor {
+func PrepareConfigs(t *testing.T, file string) ([]JobConfig, error) {
+	if yaml, err := LoadFile(file); err != nil {
+		return nil, err
+	} else if configs, err := LoadJobs(yaml); err != nil {
+		return nil, err
+	} else {
+		return configs, nil
+	}
+}
+
+func PrepareSupervisor(t *testing.T, file string) *Supervisor {
 	Buf.Reset()
 	s := NewSupervisor("", NewManager())
-	if yaml, err := LoadFile(file); err != nil {
-		panic(err)
-	} else if configs, err := LoadJobs(yaml); err != nil {
+	if configs, err := PrepareConfigs(t, file); err != nil {
 		panic(err)
 	} else {
 		jobs := SetDefaults(configs)
