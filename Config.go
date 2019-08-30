@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 	"sync"
 	"syscall"
 
+	"gopkg.in/oleiade/reflections.v1"
 	"gopkg.in/yaml.v2"
 )
 
@@ -15,19 +17,31 @@ import (
 const (
 	EXPECTEDEXITMSG = "Error: expectedExit must be signal name found in `man signal`"
 	STOPSIGNALMSG   = "Error: stopSignal must be signal name found in `man signal`"
-	INSTANCESMSG    = "Error: invalid instances value: %s\n"
 	STARTCHECKUPMSG = "Error: invalid startCheckup value: %s\n"
-	MAXRESTARTSMSG  = "Error: invalid maxrestarts value: %s\n"
 	STOPTIMEOUTMSG  = "Error: invalid StopTimeout value: %s\n"
 	UMASKMSG        = "Error: invalid umask value: %s\n"
 )
+
+// Flags used in OpenRedir
+const (
+	stdinFlags  = os.O_CREATE | os.O_RDONLY
+	stdoutFlags = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
+	stderrFlags = os.O_CREATE | os.O_WRONLY | os.O_TRUNC
+)
+
+// Redirections store the redirection file names
+type Redirections struct {
+	Stdin  string `json:"Stdin"`
+	Stdout string `json:"Stdout"`
+	Stderr string `json:"Stderr"`
+}
 
 // JobConfig represents the config struct loaded from yaml
 type JobConfig struct {
 	ID            string `json:"ID"`
 	Command       string `json:"Command"`
 	Instances     string `json:"Instances"`
-	AtLaunch      string `json:"AtLaunch"`
+	AtLaunch      string `json:"AtLaunch" yaml:"atLaunch"`
 	RestartPolicy string `json:"RestartPolicy"`
 	ExpectedExit  string `json:"ExpectedExit"`
 	StartCheckup  string `json:"StartCheckup"`
@@ -37,99 +51,169 @@ type JobConfig struct {
 	EnvVars       string `json:"EnvVars"`
 	WorkingDir    string `json:"WorkingDir"`
 	Umask         string `json:"Umask"`
-	Redirections  struct {
-		Stdin  string `json:"Stdin"`
-		Stdout string `json:"Stdout"`
-		Stderr string `json:"Stderr"`
-	}
+	Redirections
 }
 
-// Check absence of errors, raise runtime error if found
-func Check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
-func SetDefault(cfg *JobConfig, job *Job, ids map[int]bool, defaultUmask int) *Job {
-	instances, err := strconv.Atoi(cfg.Instances)
-	// an id to uniquely identify the Jobs
-	job.ParseID(cfg, ids)
-	if err != nil && cfg.Instances != "" {
-		os.Exit(1)
-	} else if cfg.Instances == "" {
-		instances = 1
-	}
-	job.Instances = make([]*Instance, instances)
-	job.pool = instances
-	// Add config to job struct
-	job.cfg = cfg
-	// Whether to start this program at launch or not
-	job.ParseAtLaunch(cfg)
-	for i := 0; i < instances; i++ {
-		var inst Instance
-		job.Instances[i] = &inst
-		// ID to uniquely identify the Job & instance
-		inst.JobID = job.ID
-		inst.InstanceID = i
-		// The command to use to launch the program
-		inst.args = strings.Fields(cfg.Command)
-		// The number of Jobesses to start and keep running
-		inst.ParseInt(cfg, "Instances", 1, INSTANCESMSG)
-		// Whether the program should be restarted always, never, or on unexpected exits only
-		inst.ParserestartPolicy(cfg)
-		// Which return codes represent an "expected" exit Status
-		inst.ParseInt(cfg, "ExpectedExit", 0, EXPECTEDEXITMSG)
-		// How long the program should be running after it’s started for it to be considered "successfully started"
-		inst.ParseInt(cfg, "StartCheckup", 1, STARTCHECKUPMSG)
-		// How many times a restart should be attempted before aborting
-		// inst.ParseInt(cfg, "MaxRestarts", 0, MAXRESTARTSMSG)
-		if max, err := strconv.Atoi(cfg.MaxRestarts); err == nil {
-			inst.MaxRestarts = int32(max)
-		} else {
-			inst.MaxRestarts = 0
-		}
-		inst.Restarts = new(int32)
-		// Which signal should be used to stop (i.e. exit gracefully) the program
-		inst.StopSignal = inst.ParseSignal(cfg, STOPSIGNALMSG)
-		// How long to wait after a graceful stop before killing the program
-		// inst.ParseInt(cfg, "StopTimeout", 1, STOPTIMEOUTMSG)
-		if timeout, err := strconv.Atoi(cfg.StopTimeout); err == nil {
-			inst.StopTimeout = timeout
-		} else {
-			inst.StopTimeout = 5
-		}
-		// Options to discard the program’s stdout/stderr or to redirect them to files
-		inst.ParseRedirections(cfg)
-		// Environment variables to set before launching the program
-		inst.EnvVars = strings.Fields(cfg.EnvVars)
-		// A working directory to set before launching the program
-		inst.WorkingDir = cfg.WorkingDir
-		// An umask to set before launching the program
-		inst.ParseInt(cfg, "Umask", defaultUmask, UMASKMSG)
-		// Add conditional var to struct
-		inst.condition = sync.NewCond(&inst.mutex)
-		inst.finishedCh = make(chan struct{})
-	}
-	return job
-}
-
+//GetDefaultUmask obtains current file permissions
 func GetDefaultUmask() int {
 	defaultUmask := syscall.Umask(0)
-	defer syscall.Umask(defaultUmask)
+	syscall.Umask(defaultUmask)
 	return defaultUmask
 }
 
-// SetDefaults translate JobConfig array into Job array, verifying inputs and setting defaults
-func SetDefaults(configJobs []JobConfig) []*Job {
-	ids := make(map[int]bool)
-	Jobs := []*Job{}
-	umask := GetDefaultUmask()
-	for _, cfg := range configJobs {
-		var job Job
-		Jobs = append(Jobs, SetDefault(&cfg, &job, ids, umask))
+//OpenRedir opens the given file for use in Jobess's redirections
+func OpenRedir(val string, flag int) (*os.File, error) {
+	if val != "" {
+		f, err := os.OpenFile(val, flag, 0666)
+		if err != nil {
+			return nil, err
+		}
+		return f, nil
 	}
-	return Jobs
+	return nil, nil
+}
+
+/*
+ParseInt uses https://golang.org/pkg/reflect/ to dynamically set struct member to integer
+*/
+func ParseInt(c JobConfig, i *Instance, member string, defaultVal int, message string) error {
+	cfgVal, _ := reflections.GetField(c, member)
+
+	if cfgVal == "" {
+		reflections.SetField(i, member, defaultVal)
+	} else if val, err := strconv.Atoi(cfgVal.(string)); err != nil {
+		return fmt.Errorf(message, c)
+	} else {
+		reflections.SetField(i, member, val)
+	}
+	return nil
+}
+
+//ConfigureInstance parse configuration file to set Instance struct properties
+func ConfigureInstance(c JobConfig, i *Instance, umask int) error {
+	// The command to use to launch the program
+	i.args = strings.Fields(c.Command)
+	// Whether the program should be restarted always, never, or on unexpected exits only
+	switch strings.ToLower(c.RestartPolicy) {
+	case "always":
+		i.restartPolicy = RESTARTALWAYS
+	case "never":
+		i.restartPolicy = RESTARTNEVER
+	case "unexpected":
+		i.restartPolicy = RESTARTUNEXPECTED
+	case "":
+		Log.Info(c, "does not specify a restart policy, NEVER set as default")
+		i.restartPolicy = RESTARTNEVER
+	default:
+		return fmt.Errorf("Error: Resart Policy for %v must be one of: always | never | unexpected, recieved: \"%s\"", c, strings.ToLower(c.RestartPolicy))
+	}
+	// Which return codes represent an "expected" exit Status
+	ParseInt(c, i, "ExpectedExit", 0, EXPECTEDEXITMSG)
+	// How long the program should be running after it’s started for it to be considered "successfully started"
+	ParseInt(c, i, "StartCheckup", 0, STARTCHECKUPMSG)
+	// How many times a restart should be attempted before aborting
+	if c.MaxRestarts == "" {
+		i.MaxRestarts = 0
+	} else if val, err := strconv.Atoi(c.MaxRestarts); err != nil {
+		return fmt.Errorf("%v Error: invalid maxrestarts value\n", c)
+	} else {
+		i.MaxRestarts = int32(val)
+	}
+	i.Restarts = new(int32)
+	// Which signal should be used to stop (i.e. exit gracefully) the program
+	if c.StopSignal == "" {
+		i.StopSignal = syscall.Signal(0)
+	} else if sig, ok := Signals[strings.ToUpper(c.StopSignal)]; ok {
+		i.StopSignal = sig
+	} else {
+		return fmt.Errorf("Configuration error: invalid stop signal for %v", c)
+	}
+	// How long to wait after a graceful stop before killing the program
+	ParseInt(c, i, "StopTimeout", 1, STOPTIMEOUTMSG)
+	// Options to discard the program’s stdout/stderr or to redirect them to files
+	if stdin, err := OpenRedir(c.Redirections.Stdin, stdinFlags); err != nil {
+		return err
+	} else if stdout, err := OpenRedir(c.Redirections.Stdout, stdoutFlags); err != nil {
+		return err
+	} else if stderr, err := OpenRedir(c.Redirections.Stderr, stdoutFlags); err != nil {
+		return err
+	} else {
+		i.Redirections = []*os.File{stdin, stdout, stderr}
+	}
+	// Environment variables to set before launching the program
+	i.EnvVars = strings.Fields(c.EnvVars)
+	// A working directory to set before launching the program
+	i.WorkingDir = c.WorkingDir
+	// An umask to set before launching the program
+	ParseInt(c, i, "Umask", umask, UMASKMSG)
+	// Add conditional var to struct
+	i.condition = sync.NewCond(&i.mutex)
+	i.finishedCh = make(chan struct{})
+	return nil
+}
+
+//ConfigureJob parse configuration file to set Job struct properties
+func ConfigureJob(c JobConfig, job *Job, ids map[int]bool) error {
+	// an id to uniquely identify the Jobs
+	if c.ID == "" {
+		return fmt.Errorf("Error: ID must be specified")
+	} else if val, err := strconv.Atoi(c.ID); err != nil {
+		return fmt.Errorf("Error: ID must be integer")
+	} else if _, ok := ids[val]; ok {
+		return fmt.Errorf("Error: ID must be unique")
+	} else {
+		ids[val] = true
+		job.ID = val
+	}
+	// The number of Instances to start and keep running
+	if c.Instances == "" {
+		job.pool = 1
+	} else if pool, err := strconv.Atoi(c.Instances); err != nil {
+		return fmt.Errorf("Configuration error: invalid instances value for Job ID: %d", job.ID)
+	} else {
+		job.pool = pool
+	}
+	// Add config to job struct
+	job.cfg = &c
+	job.Instances = make([]*Instance, job.pool)
+	// Whether to start this program at launch or not
+	switch strings.ToLower(c.AtLaunch) {
+	case "true":
+		job.AtLaunch = true
+	case "false":
+		job.AtLaunch = false
+	case "":
+		Log.Info(job, "AtLaunch empty, defaulting to true")
+		job.AtLaunch = true
+	default:
+		return fmt.Errorf("%v configuration error: invalid value for atLaunch", c)
+	}
+	return nil
+}
+
+// SetDefaults translate JobConfig array into Job array, verifying inputs and setting defaults
+func SetDefaults(configJobs []JobConfig) ([]*Job, error) {
+	ids := make(map[int]bool)
+	jobs := []*Job{}
+	umask := GetDefaultUmask()
+	for _, c := range configJobs {
+		var job Job
+		if err := ConfigureJob(c, &job, ids); err != nil {
+			return nil, err
+		}
+		for i := 0; i < job.pool; i++ {
+			var instance Instance
+
+			instance.JobID = job.ID
+			instance.InstanceID = i
+			job.Instances[i] = &instance
+			if err := ConfigureInstance(c, &instance, umask); err != nil {
+				return nil, err
+			}
+		}
+		jobs = append(jobs, &job)
+	}
+	return jobs, nil
 }
 
 //LoadFile Reads given Procfile into buffer

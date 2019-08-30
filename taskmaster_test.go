@@ -15,10 +15,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestStartStopSingle(t *testing.T) {
-	file := "procfiles/StartStopSingle.yaml"
+func TestTaskMasterStartStopSingle(t *testing.T) {
 	ch := make(chan error)
-	s := PrepareSupervisor(t, file)
+	s := PrepareSupervisor(t, "procfiles/StartStopSingle.yaml")
 	go func() {
 		if err := s.StartJob(0); err != nil {
 			ch <- err
@@ -46,10 +45,9 @@ func TestStartStopSingle(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestStartStopMultiJobs(t *testing.T) {
-	file := "procfiles/StartStopMulti.yaml"
+func TestTaskMasterStartStopMultiJobs(t *testing.T) {
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, file)
+	s := PrepareSupervisor(t, "procfiles/StartStopMulti.yaml")
 	go func() {
 		s.StartAllJobs()
 		s.StopAllJobs()
@@ -71,10 +69,9 @@ func TestStartStopMultiJobs(t *testing.T) {
 		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())
 	}
 }
-func TestRestartAfterFailedStart(t *testing.T) {
-	file := "procfiles/RestartAfterFailedStart.yaml"
+func TestTaskMasterRestartAfterFailedStart(t *testing.T) {
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, file)
+	s := PrepareSupervisor(t, "procfiles/RestartAfterFailedStart.yaml")
 	go func() {
 		s.StartAllJobs()
 		ch <- struct{}{}
@@ -82,7 +79,7 @@ func TestRestartAfterFailedStart(t *testing.T) {
 	select {
 	case <-ch:
 		LogsContain(t, Buf.String(), []string{
-			"Job 3 Instance 0 : Creation of failed: failed to start with error: fork/exec foo: no such file or directory",
+			"Job 3 Instance 0 : Creation failed: failed to start with error: fork/exec foo: no such file or directory",
 		})
 	case <-time.After(time.Duration(20) * time.Second):
 		t.Errorf("TestRestartAfterFailedStart timed out, log:\n%s", Buf.String())
@@ -90,10 +87,9 @@ func TestRestartAfterFailedStart(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestRestartAfterUnexpectedExit(t *testing.T) {
-	file := "procfiles/RestartAfterUnexpectedExit.yaml"
+func TestTaskMasterRestartAfterUnexpectedExit(t *testing.T) {
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, file)
+	s := PrepareSupervisor(t, "procfiles/RestartAfterUnexpectedExit.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(4)
 		s.StartAllJobs()
@@ -133,10 +129,9 @@ func TestRestartAfterUnexpectedExit(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestNoRestartAfterExpectedExit(t *testing.T) {
-	file := "procfiles/NoRestartAfterExpectedExit.yaml"
+func TestTaskMasterNoRestartAfterExpectedExit(t *testing.T) {
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, file)
+	s := PrepareSupervisor(t, "procfiles/NoRestartAfterExpectedExit.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(5)
 		s.StartAllJobs()
@@ -155,10 +150,9 @@ func TestNoRestartAfterExpectedExit(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestNoRestartAfterExit(t *testing.T) {
-	file := "procfiles/NoRestartAfterExit.yaml"
+func TestTaskMasterNoRestartAfterExit(t *testing.T) {
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, file)
+	s := PrepareSupervisor(t, "procfiles/NoRestartAfterExit.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(6)
 		s.StartAllJobs()
@@ -178,10 +172,9 @@ func TestNoRestartAfterExit(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestRestartAlways(t *testing.T) {
-	file := "procfiles/RestartAlways.yaml"
+func TestTaskMasterRestartAlways(t *testing.T) {
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, file)
+	s := PrepareSupervisor(t, "procfiles/RestartAlways.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(7)
 		s.StartAllJobs()
@@ -208,10 +201,9 @@ func TestRestartAlways(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestStartTimeout(t *testing.T) {
-	file := "procfiles/StartTimeout.yaml"
+func TestTaskMasterStartTimeout(t *testing.T) {
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, file)
+	s := PrepareSupervisor(t, "procfiles/StartTimeout.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(8)
 		s.StartAllJobs()
@@ -234,11 +226,10 @@ func TestStartTimeout(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestKillAfterIgnoredStopSignal(t *testing.T) {
-	proc := "procfiles/KillAfterIgnoredStopSignal.yaml"
+func TestTaskMasterKillAfterIgnoredStopSignal(t *testing.T) {
 	test := "test/KillAfterIgnoredStopSignal.test"
 	ch := make(chan error)
-	s := PrepareSupervisor(t, proc)
+	s := PrepareSupervisor(t, "procfiles/KillAfterIgnoredStopSignal.yaml")
 	go func() {
 		if err := s.StartJob(9); err != nil {
 			ch <- err
@@ -275,11 +266,10 @@ func TestKillAfterIgnoredStopSignal(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestRedirectStdout(t *testing.T) {
-	procFile := "procfiles/RedirectStdout.yaml"
+func TestTaskMasterRedirectStdout(t *testing.T) {
 	testFile := "test/RedirectStdout.test"
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, procFile)
+	s := PrepareSupervisor(t, "procfiles/RedirectStdout.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(10)
 		s.StartAllJobs()
@@ -307,11 +297,10 @@ func TestRedirectStdout(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestRedirectStderr(t *testing.T) {
-	procFile := "procfiles/RedirectStderr.yaml"
+func TestTaskMasterRedirectStderr(t *testing.T) {
 	testFile := "test/RedirectStderr.test"
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, procFile)
+	s := PrepareSupervisor(t, "procfiles/RedirectStderr.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(11)
 		s.StartAllJobs()
@@ -339,11 +328,10 @@ func TestRedirectStderr(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestEnvVars(t *testing.T) {
-	procFile := "procfiles/EnvVars.yaml"
+func TestTaskMasterEnvVars(t *testing.T) {
 	testFile := "test/EnvVars.test"
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, procFile)
+	s := PrepareSupervisor(t, "procfiles/EnvVars.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(12)
 		s.StartAllJobs()
@@ -371,11 +359,10 @@ func TestEnvVars(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestSetWorkingDir(t *testing.T) {
-	procFile := "procfiles/SetWorkingDir.yaml"
+func TestTaskMasterSetWorkingDir(t *testing.T) {
 	testFile := "test/SetWorkingDir.test"
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, procFile)
+	s := PrepareSupervisor(t, "procfiles/SetWorkingDir.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(13)
 		s.StartAllJobs()
@@ -404,11 +391,10 @@ func TestSetWorkingDir(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestUmask(t *testing.T) {
-	procFile := "procfiles/SetUmask.yaml"
+func TestTaskMasterUmask(t *testing.T) {
 	testFile := "test/SetUmask.test"
 	ch := make(chan struct{})
-	s := PrepareSupervisor(t, procFile)
+	s := PrepareSupervisor(t, "procfiles/SetUmask.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(14)
 		s.StartAllJobs()
@@ -436,10 +422,9 @@ func TestUmask(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestStartStopMultipleInstances(t *testing.T) {
-	procFile := "procfiles/StartStopMultipleInstances.yaml"
+func TestTaskMasterStartStopMultipleInstances(t *testing.T) {
 	ch := make(chan error)
-	s := PrepareSupervisor(t, procFile)
+	s := PrepareSupervisor(t, "procfiles/StartStopMultipleInstances.yaml")
 	go func() {
 		if err := s.StartJob(15); err != nil {
 			ch <- err
@@ -471,6 +456,6 @@ func TestStartStopMultipleInstances(t *testing.T) {
 	Buf.Reset()
 }
 
-func TestChildProcessesKilled(t *testing.T) {
+func TestTaskMasterChildProcessesKilled(t *testing.T) {
 	Buf.Reset()
 }
