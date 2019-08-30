@@ -1,16 +1,16 @@
-- id: 10
-  command: ./test/write_stdout.sh
-  instances: 1
+- id: 17
+  command: /bin/sleep 9999
+  instances: 2
   atLaunch: true
   restartPolicy: never
-  expectedExit: 0
+  expectedExit: 1
   startCheckup: 0
-  maxRestarts: 5
+  maxRestarts: 0
   stopSignal: SIGINT
-  stopTimeout: 3
+  stopTimeout: 2
   redirections:
     stdin:
-    stdout: test/RedirectStdout.test
+    stdout:
     stderr:
   envVars:
   workingDir:

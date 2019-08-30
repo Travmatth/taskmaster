@@ -2,16 +2,16 @@
   command: ./test/expectedexit.sh
   instances: 1
   atLaunch: true
-  restartpolicy: unexpected
-  expectedexit: 1
-  startcheckup: 0
-  maxrestarts: 5
-  stopsignal: SIGINT
-  stoptimeout: 5
+  restartPolicy: unexpected
+  expectedExit: 1
+  startCheckup: 0
+  maxRestarts: 5
+  stopSignal: SIGINT
+  stopTimeout: 5
   redirections:
     stdin:
     stdout:
     stderr:
-  envvars:
-  workingdir:
+  envVars:
+  workingDir:
   umask:

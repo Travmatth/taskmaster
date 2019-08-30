@@ -2,16 +2,16 @@
   command: /bin/sleep 9999
   instances: 2
   atLaunch: true
-  restartpolicy: always
-  expectedexit: 0
-  startcheckup: 1
-  maxrestarts: 0
-  stopsignal: SIGINT
-  stoptimeout: 1
+  restartPolicy: always
+  expectedExit: 0
+  startCheckup: 1
+  maxRestarts: 0
+  stopSignal: SIGINT
+  stopTimeout: 1
   redirections:
     stdin:
     stdout:
     stderr:
-  envvars:
-  workingdir:
+  envVars:
+  workingDir:
   umask:

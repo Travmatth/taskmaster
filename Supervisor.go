@@ -1,7 +1,6 @@
 package main
 
 import (
-	"reflect"
 	"sync"
 )
 
@@ -27,17 +26,21 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 	currentJobs, oldJobs, changedJobs, newJobs := []*Job{}, []*Job{}, []*Job{}, []*Job{}
 	for _, cfg := range jobs {
 		if job, ok := s.Mgr.Jobs[cfg.ID]; !ok {
+			Log.Info("Supervisor diffing next jobs: new", cfg)
 			newJobs = append(newJobs, cfg)
-		} else if diff := reflect.DeepEqual(cfg, job.cfg); diff {
+		} else if diff := cfg.cfg.Same(job.cfg); !diff {
+			Log.Info("Supervisor diffing next jobs: changed", cfg)
 			changedJobs = append(changedJobs, cfg)
 		} else {
-			job := s.Mgr.RemoveJob(cfg.ID)
-			currentJobs = append(currentJobs, job)
+			Log.Info("Supervisor diffing next jobs: current", cfg)
+			currentJobs = append(currentJobs, cfg)
+			s.Mgr.RemoveJob(cfg.ID)
 		}
 		s.Mgr.RemoveJob(cfg.ID)
 	}
 	for _, job := range s.Mgr.Jobs {
 		oldJobs = append(oldJobs, job)
+		s.Mgr.RemoveJob(job.ID)
 	}
 	return currentJobs, oldJobs, changedJobs, newJobs
 }
@@ -62,6 +65,13 @@ func (s *Supervisor) Reload(jobs []*Job) error {
 		}
 	}
 	return nil
+}
+
+//AddMultiJobs add multiple jobs to manager
+func (s *Supervisor) AddMultiJobs(jobs []*Job) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.Mgr.AddMultiJobs(jobs)
 }
 
 //WaitForExit waits for exit
@@ -89,6 +99,13 @@ func (s *Supervisor) StopJob(id int) error {
 	}
 	job.Stop(true)
 	return nil
+}
+
+//GetJob returns the job with the given id
+func (s *Supervisor) GetJob(id int) (*Job, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	return s.Mgr.GetJob(id)
 }
 
 //StartAllJobs starts all jobs & waits for start

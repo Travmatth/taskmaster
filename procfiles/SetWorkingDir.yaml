@@ -2,16 +2,16 @@
   command: ./write_on_workdir.sh
   instances: 1
   atLaunch: true
-  restartpolicy: never
-  expectedexit: 0
-  startcheckup: 0
-  maxrestarts: 5
-  stopsignal: SIGINT
-  stoptimeout: 0
+  restartPolicy: never
+  expectedExit: 0
+  startCheckup: 0
+  maxRestarts: 5
+  stopSignal: SIGINT
+  stopTimeout: 0
   redirections:
     stdin:
     stdout: test/SetWorkingDir.test
     stderr:
-  envvars:
-  workingdir: test
+  envVars:
+  workingDir: test
   umask:

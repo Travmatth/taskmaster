@@ -24,8 +24,8 @@ func (m *Manager) AddSingleJob(job *Job) {
 	m.Jobs[job.ID] = job
 }
 
-//AddMultiJob adds multiple jobs
-func (m *Manager) AddMultiJob(jobs []*Job) {
+//AddMultiJobs adds multiple jobs
+func (m *Manager) AddMultiJobs(jobs []*Job) {
 	defer m.lock.Unlock()
 	m.lock.Lock()
 	for _, job := range jobs {
@@ -54,4 +54,15 @@ func (m *Manager) GetJob(id int) (*Job, error) {
 		return job, nil
 	}
 	return nil, fmt.Errorf("Manager Error: No Job with ID: %d", id)
+}
+
+//GetAllJobs retrieves all jobs
+func (m *Manager) GetAllJobs(id int) []*Job {
+	var jobs []*Job
+	defer m.lock.Unlock()
+	m.lock.Lock()
+	for _, job := range m.Jobs {
+		jobs = append(jobs, job)
+	}
+	return jobs
 }

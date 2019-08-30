@@ -1,13 +1,13 @@
-- id: 1
+- id: 16
   command: /bin/sleep 9999
   instances: 1
   atLaunch: true
-  restartPolicy: always
-  expectedExit: 0
-  startCheckup: 1
+  restartPolicy: never
+  expectedExit: 1
+  startCheckup: 0
   maxRestarts: 0
   stopSignal: SIGINT
-  stopTimeout: 5
+  stopTimeout: 1
   redirections:
     stdin:
     stdout:
@@ -15,16 +15,16 @@
   envVars:
   workingDir:
   umask:
-- id: 2
+- id: 17
   command: /bin/sleep 9999
   instances: 1
   atLaunch: true
-  restartPolicy: always
-  expectedExit: 0
-  startCheckup: 1
+  restartPolicy: never
+  expectedExit: 1
+  startCheckup: 0
   maxRestarts: 0
   stopSignal: SIGINT
-  stopTimeout: 5
+  stopTimeout: 1
   redirections:
     stdin:
     stdout:

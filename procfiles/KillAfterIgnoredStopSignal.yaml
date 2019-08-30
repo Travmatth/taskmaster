@@ -2,16 +2,16 @@
   command: ./test/sleep_sigint_trap.sh
   instances: 1
   atLaunch: true
-  restartpolicy: never
-  expectedexit: 0
-  startcheckup: 2
-  maxrestarts: 0
-  stopsignal: SIGINT
-  stoptimeout: 3
+  restartPolicy: never
+  expectedExit: 0
+  startCheckup: 2
+  maxRestarts: 0
+  stopSignal: SIGINT
+  stopTimeout: 3
   redirections:
     stdin:
     stdout: test/KillAfterIgnoredStopSignal.test
     stderr:
-  envvars:
-  workingdir:
+  envVars:
+  workingDir:
   umask:

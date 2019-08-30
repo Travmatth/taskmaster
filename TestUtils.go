@@ -43,7 +43,7 @@ func PrepareSupervisor(t *testing.T, file string) *Supervisor {
 	if jobs, err := LoadJobsFromFile(file); err != nil {
 		panic(err)
 	} else {
-		s.Mgr.AddMultiJob(jobs)
+		s.Mgr.AddMultiJobs(jobs)
 		return s
 	}
 }

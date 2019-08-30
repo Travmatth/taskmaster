@@ -38,19 +38,19 @@ type Redirections struct {
 
 // JobConfig represents the config struct loaded from yaml
 type JobConfig struct {
-	ID            string `json:"ID"`
-	Command       string `json:"Command"`
-	Instances     string `json:"Instances"`
+	ID            string `json:"ID" yaml:"id"`
+	Command       string `json:"Command" yaml:"command"`
+	Instances     string `json:"Instances" yaml:"instances"`
 	AtLaunch      string `json:"AtLaunch" yaml:"atLaunch"`
-	RestartPolicy string `json:"RestartPolicy"`
-	ExpectedExit  string `json:"ExpectedExit"`
-	StartCheckup  string `json:"StartCheckup"`
-	MaxRestarts   string `json:"MaxRestarts"`
-	StopSignal    string `json:"StopSignal"`
-	StopTimeout   string `json:"StopTimeout"`
-	EnvVars       string `json:"EnvVars"`
-	WorkingDir    string `json:"WorkingDir"`
-	Umask         string `json:"Umask"`
+	RestartPolicy string `json:"RestartPolicy" yaml:"restartPolicy"`
+	ExpectedExit  string `json:"ExpectedExit" yaml:"expectedExit"`
+	StartCheckup  string `json:"StartCheckup" yaml:"startCheckup"`
+	MaxRestarts   string `json:"MaxRestarts" yaml:"maxRestarts"`
+	StopSignal    string `json:"StopSignal" yaml:"stopSignal"`
+	StopTimeout   string `json:"StopTimeout" yaml:"stopTimeout"`
+	EnvVars       string `json:"EnvVars" yaml:"envVars"`
+	WorkingDir    string `json:"WorkingDir" yaml:"workingDir"`
+	Umask         string `json:"Umask" yaml:"umask"`
 	Redirections
 }
 
@@ -243,6 +243,28 @@ func LoadJobsFromFile(file string) ([]*Job, error) {
 	} else {
 		return SetDefaults(jobConfigs)
 	}
+}
+
+func (c JobConfig) Same(cfg *JobConfig) bool {
+	if c.ID != cfg.ID ||
+		c.Command != cfg.Command ||
+		c.Instances != cfg.Instances ||
+		c.AtLaunch != cfg.AtLaunch ||
+		c.RestartPolicy != cfg.RestartPolicy ||
+		c.ExpectedExit != cfg.ExpectedExit ||
+		c.StartCheckup != cfg.StartCheckup ||
+		c.MaxRestarts != cfg.MaxRestarts ||
+		c.StopSignal != cfg.StopSignal ||
+		c.StopTimeout != cfg.StopTimeout ||
+		c.EnvVars != cfg.EnvVars ||
+		c.WorkingDir != cfg.WorkingDir ||
+		c.Umask != cfg.Umask ||
+		c.Redirections.Stdin != cfg.Redirections.Stdin ||
+		c.Redirections.Stdout != cfg.Redirections.Stdout ||
+		c.Redirections.Stderr != cfg.Redirections.Stderr {
+		return false
+	}
+	return true
 }
 
 func (c JobConfig) String() string {

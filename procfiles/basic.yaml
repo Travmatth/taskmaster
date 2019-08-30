@@ -7,15 +7,15 @@
 # Whether to start this program at launch or not
   atLaunch: true
 # Whether the program should be restarted always, never, or on unexpected exits only
-  restartpolicy: always
+  restartPolicy: always
 # Which return codes represent an "expected" exit Status
-  expectedexit: 0
+  expectedExit: 0
 # How long the program should be running after it’s started for it to be considered "successfully started"
-  startcheckup: 1
+  startCheckup: 1
 # How many times a restart should be attempted before aborting
-  maxrestarts: 0
+  maxRestarts: 0
 # Which signal should be used to stop (i.e. exit gracefully) the program
-  stopsignal: SIGINT
+  stopSignal: SIGINT
 # How long to wait after a graceful stop before killing the program
   StopTimeout: 1
 # Options to discard the program’s stdout/stderr or to redirect them to files
@@ -24,8 +24,8 @@
     stdout: ID0_out.test
     stderr: ID0_err.test
 # Environment variables to set before launching the program
-  envvars:
+  envVars:
 # A working directory to set before launching the program
-  workingdir:
+  workingDir:
 # An umask to set before launching the program
   umask:
