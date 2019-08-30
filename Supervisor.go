@@ -24,19 +24,20 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 	defer s.lock.Unlock()
 	s.lock.Lock()
 	currentJobs, oldJobs, changedJobs, newJobs := []*Job{}, []*Job{}, []*Job{}, []*Job{}
-	for _, cfg := range jobs {
-		if job, ok := s.Mgr.Jobs[cfg.ID]; !ok {
-			Log.Info("Supervisor diffing next jobs: new", cfg)
-			newJobs = append(newJobs, cfg)
-		} else if diff := cfg.cfg.Same(job.cfg); !diff {
-			Log.Info("Supervisor diffing next jobs: changed", cfg)
-			changedJobs = append(changedJobs, cfg)
+	for _, reloaded := range jobs {
+		if job, ok := s.Mgr.Jobs[reloaded.ID]; !ok {
+			Log.Info("Supervisor diffing next jobs: new", reloaded)
+			newJobs = append(newJobs, reloaded)
+		} else if diff := reloaded.cfg.Same(job.cfg); !diff {
+			Log.Info("Supervisor diffing next jobs: changed", reloaded)
+			changedJobs = append(changedJobs, job)
+			newJobs = append(newJobs, reloaded)
+			s.Mgr.RemoveJob(job.ID)
 		} else {
-			Log.Info("Supervisor diffing next jobs: current", cfg)
-			currentJobs = append(currentJobs, cfg)
-			s.Mgr.RemoveJob(cfg.ID)
+			Log.Info("Supervisor diffing next jobs: current", reloaded)
+			currentJobs = append(currentJobs, reloaded)
+			s.Mgr.RemoveJob(job.ID)
 		}
-		s.Mgr.RemoveJob(cfg.ID)
 	}
 	for _, job := range s.Mgr.Jobs {
 		oldJobs = append(oldJobs, job)
@@ -47,21 +48,18 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 
 //Reload accepts a list of new jobs and diffs against current jobs
 // to determine which to stop, start, remove, or continue unchanged
-func (s *Supervisor) Reload(jobs []*Job) error {
+func (s *Supervisor) Reload(jobs []*Job, wait bool) error {
 	curr, old, changed, next := s.DiffJobs(jobs)
-	for _, job := range curr {
+	s.AddMultiJobs(curr)
+	for _, job := range append(old, changed...) {
+		job.Stop(wait)
+	}
+	for _, job := range append(curr, next...) {
 		s.Mgr.AddSingleJob(job)
-	}
-	for _, job := range old {
-		job.Stop(false)
-	}
-	for _, job := range changed {
-		s.Mgr.RestartJob(job.ID)
 	}
 	for _, job := range next {
-		s.Mgr.AddSingleJob(job)
 		if job.AtLaunch {
-			job.Start(false)
+			job.Start(wait)
 		}
 	}
 	return nil
@@ -76,7 +74,7 @@ func (s *Supervisor) AddMultiJobs(jobs []*Job) {
 
 //WaitForExit waits for exit
 func (s *Supervisor) WaitForExit() {
-	s.StopAllJobs()
+	s.StopAllJobs(true)
 }
 
 //StartJob retrieves & starts a given job
@@ -109,14 +107,14 @@ func (s *Supervisor) GetJob(id int) (*Job, error) {
 }
 
 //StartAllJobs starts all jobs & waits for start
-func (s *Supervisor) StartAllJobs() {
+func (s *Supervisor) StartAllJobs(wait bool) {
 	ch := make(chan *Job)
 	s.Mgr.lock.Lock()
 	n := len(s.Mgr.Jobs)
 	for _, job := range s.Mgr.Jobs {
 		if job.AtLaunch {
 			go func(job *Job) {
-				job.Start(true)
+				job.Start(wait)
 				ch <- job
 			}(job)
 		}
@@ -128,13 +126,13 @@ func (s *Supervisor) StartAllJobs() {
 }
 
 //StopAllJobs stops all jobs & waits for stop
-func (s *Supervisor) StopAllJobs() {
+func (s *Supervisor) StopAllJobs(wait bool) {
 	ch := make(chan *Job)
 	s.Mgr.lock.Lock()
 	n := len(s.Mgr.Jobs)
 	for _, job := range s.Mgr.Jobs {
 		go func(job *Job) {
-			job.Stop(true)
+			job.Stop(wait)
 			ch <- job
 		}(job)
 	}

@@ -42,10 +42,6 @@ func (m *Manager) RemoveJob(id int) *Job {
 	return job
 }
 
-//RestartJob restarts specified job
-func (m *Manager) RestartJob(id int) {
-}
-
 //GetJob retrieves job
 func (m *Manager) GetJob(id int) (*Job, error) {
 	defer m.lock.Unlock()

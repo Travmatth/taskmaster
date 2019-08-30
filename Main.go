@@ -26,19 +26,19 @@ func main() {
 			if sig == syscall.SIGHUP {
 				if reloadJobs, err := LoadJobsFromFile(configFile); err != nil {
 					Log.Info("Error reloading configuration", err)
-					s.StopAllJobs()
+					s.StopAllJobs(true)
 					os.Exit(1)
 				} else {
 					Log.Info("Supervisor: signal", sig, "received, reloading", configFile)
-					s.Reload(reloadJobs)
+					s.Reload(reloadJobs, false)
 				}
 			} else {
-				s.StopAllJobs()
+				s.StopAllJobs(true)
 				os.Exit(0)
 			}
 		}()
 		for {
-			if err := s.Reload(jobs); err != nil {
+			if err := s.Reload(jobs, false); err != nil {
 				panic(err)
 			} else {
 				for {

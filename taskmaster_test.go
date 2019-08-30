@@ -49,8 +49,8 @@ func TestTaskMasterStartStopMultiJobs(t *testing.T) {
 	ch := make(chan struct{})
 	s := PrepareSupervisor(t, "procfiles/StartStopMulti.yaml")
 	go func() {
-		s.StartAllJobs()
-		s.StopAllJobs()
+		s.StartAllJobs(true)
+		s.StopAllJobs(true)
 		ch <- struct{}{}
 	}()
 	select {
@@ -73,7 +73,7 @@ func TestTaskMasterRestartAfterFailedStart(t *testing.T) {
 	ch := make(chan struct{})
 	s := PrepareSupervisor(t, "procfiles/RestartAfterFailedStart.yaml")
 	go func() {
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		ch <- struct{}{}
 	}()
 	select {
@@ -92,7 +92,7 @@ func TestTaskMasterRestartAfterUnexpectedExit(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/RestartAfterUnexpectedExit.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(4)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		<-j.Instances[0].finishedCh
 		<-j.Instances[0].finishedCh
@@ -134,7 +134,7 @@ func TestTaskMasterNoRestartAfterExpectedExit(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/NoRestartAfterExpectedExit.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(5)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
@@ -155,7 +155,7 @@ func TestTaskMasterNoRestartAfterExit(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/NoRestartAfterExit.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(6)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
@@ -177,10 +177,10 @@ func TestTaskMasterRestartAlways(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/RestartAlways.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(7)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		<-j.Instances[0].finishedCh
-		s.StopAllJobs()
+		s.StopAllJobs(true)
 		ch <- struct{}{}
 	}()
 	select {
@@ -206,7 +206,7 @@ func TestTaskMasterStartTimeout(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/StartTimeout.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(8)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
@@ -272,7 +272,7 @@ func TestTaskMasterRedirectStdout(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/RedirectStdout.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(10)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
@@ -303,7 +303,7 @@ func TestTaskMasterRedirectStderr(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/RedirectStderr.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(11)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
@@ -334,7 +334,7 @@ func TestTaskMasterEnvVars(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/EnvVars.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(12)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
@@ -365,7 +365,7 @@ func TestTaskMasterSetWorkingDir(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/SetWorkingDir.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(13)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		time.Sleep(1)
 		ch <- struct{}{}
@@ -397,7 +397,7 @@ func TestTaskMasterUmask(t *testing.T) {
 	s := PrepareSupervisor(t, "procfiles/SetUmask.yaml")
 	go func() {
 		j, _ := s.Mgr.GetJob(14)
-		s.StartAllJobs()
+		s.StartAllJobs(true)
 		<-j.Instances[0].finishedCh
 		ch <- struct{}{}
 	}()
