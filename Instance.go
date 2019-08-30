@@ -140,7 +140,8 @@ func (i *Instance) Run(callback func()) {
 		i.ChangeStatus(PROCSTART)
 		atomic.AddInt32(i.Restarts, 1)
 		if err := i.CreateJob(); err != nil {
-			if atomic.LoadInt32(i.Restarts) > i.MaxRestarts {
+			restarts := atomic.LoadInt32(i.Restarts)
+			if restarts > i.MaxRestarts {
 				errStr := fmt.Sprintf("failed to start with error: %s", err)
 				i.JobCreateFailure(callback, errStr)
 				break
@@ -170,12 +171,17 @@ func (i *Instance) Run(callback func()) {
 		i.mutex.Lock()
 		if i.Status == PROCRUNNING {
 			i.ChangeStatus(PROCEXITED)
+			select {
+			case i.finishedCh <- struct{}{}:
+			default:
+			}
 			break
 		} else {
 			i.ChangeStatus(PROCBACKOFF)
 		}
-		if atomic.LoadInt32(i.Restarts) >= i.MaxRestarts {
-			i.JobCreateFailure(callback, fmt.Sprintf("%s : Failed to start maximum retries reached", i))
+		restart := atomic.LoadInt32(i.Restarts)
+		if restart >= i.MaxRestarts {
+			i.JobCreateFailure(callback, fmt.Sprintf("Failed to start maximum retries reached"))
 			break
 		} else {
 			Log.Info(i, ": Start failed, restarting")
@@ -211,10 +217,6 @@ func (i *Instance) WaitForExit() {
 	i.state = state
 	i.StopTime = time.Now()
 	i.mutex.Unlock()
-	select {
-	case i.finishedCh <- struct{}{}:
-	default:
-	}
 }
 
 //PIDExists check the existence of given process
@@ -231,7 +233,7 @@ func (i *Instance) PIDExists() bool {
 
 //JobCreateFailure registers the failure of attempt to create job
 func (i *Instance) JobCreateFailure(callback func(), errStr string) {
-	Log.Info(i, ": Creation of", "failed:", errStr)
+	Log.Info(i, ": Creation failed:", errStr)
 	callback()
 }
 
@@ -249,7 +251,7 @@ func (i *Instance) MonitorProgramRunning(callback func(), end time.Time, monitor
 		i.Status = PROCRUNNING
 		callback()
 	} else {
-		Log.Debug(i, ": monitor failed, program exit: ", progState, " with job status", i.Status)
+		Log.Info(i, ": monitor failed, program exit: ", progState, " with job status", i.Status)
 	}
 }
 

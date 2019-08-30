@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Job struct {
 	ID        int
 	Instances []*Instance
@@ -18,4 +20,8 @@ func (j *Job) Stop(wait bool) {
 	for _, instance := range j.Instances {
 		instance.StopInstance(wait)
 	}
+}
+
+func (j Job) String() string {
+	return fmt.Sprintf("Job %d", j.ID)
 }

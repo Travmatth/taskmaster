@@ -6,7 +6,7 @@ import (
 	"github.com/op/go-logging"
 )
 
-// var Log *logging.Logger
+var Log *logging.Logger
 
 func setLogLevel(args []string) logging.Level {
 	switch args[0] {
