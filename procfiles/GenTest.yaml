@@ -1,0 +1,68 @@
+- id: 16
+  command: /bin/sleep 9999
+  instances: 1
+  atLaunch: true
+  restartPolicy: never
+  expectedExit: 1
+  startCheckup: 0
+  maxRestarts: 0
+  stopSignal: SIGINT
+  stopTimeout: 1
+  redirections:
+    stdin:
+    stdout:
+    stderr:
+  envVars:
+  workingDir:
+  umask:
+- id: 17
+  command: /bin/sleep 9999
+  instances: 1
+  atLaunch: true
+  restartPolicy: never
+  expectedExit: 1
+  startCheckup: 0
+  maxRestarts: 0
+  stopSignal: SIGINT
+  stopTimeout: 1
+  redirections:
+    stdin:
+    stdout:
+    stderr:
+  envVars:
+  workingDir:
+  umask:
+- id: 19
+  command: /bin/sleep 9999
+  instances: 1
+  atLaunch: true
+  restartPolicy: never
+  expectedExit: 1
+  startCheckup: 0
+  maxRestarts: 0
+  stopSignal: SIGINT
+  stopTimeout: 1
+  redirections:
+    stdin:
+    stdout:
+    stderr:
+  envVars:
+  workingDir:
+  umask:
+- id: 18
+  command: /bin/sleep 9999
+  instances: 1
+  atLaunch: true
+  restartPolicy: never
+  expectedExit: 1
+  startCheckup: 0
+  maxRestarts: 0
+  stopSignal: SIGINT
+  stopTimeout: 1
+  redirections:
+    stdin:
+    stdout:
+    stderr:
+  envVars:
+  workingDir:
+  umask:
