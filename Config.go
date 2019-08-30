@@ -225,11 +225,26 @@ func LoadFile(file string) ([]byte, error) {
 	return buf, nil
 }
 
-// LoadConfig opens config file and parses yaml syntax into array of JobConfig structs
+// LoadJobs opens config file and parses yaml syntax into array of JobConfig structs
 func LoadJobs(buf []byte) ([]JobConfig, error) {
 	configs := []JobConfig{}
 	if err := yaml.Unmarshal(buf, &configs); err != nil {
 		return nil, err
 	}
 	return configs, nil
+}
+
+// LoadJobsFromFile loads a configuration file and configures given jobs
+func LoadJobsFromFile(file string) ([]*Job, error) {
+	if buf, fileErr := LoadFile(file); fileErr != nil {
+		return nil, fileErr
+	} else if jobConfigs, configErr := LoadJobs(buf); configErr != nil {
+		return nil, configErr
+	} else {
+		return SetDefaults(jobConfigs)
+	}
+}
+
+func (c JobConfig) String() string {
+	return fmt.Sprintf("JobConfig %s", c.ID)
 }

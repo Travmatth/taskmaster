@@ -5,8 +5,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"runtime"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -39,23 +37,12 @@ func MockLogger(out string) {
 	Log.SetBackend(leveledBackend)
 }
 
-func PrepareConfigs(t *testing.T, file string) ([]JobConfig, error) {
-	if yaml, err := LoadFile(file); err != nil {
-		return nil, err
-	} else if configs, err := LoadJobs(yaml); err != nil {
-		return nil, err
-	} else {
-		return configs, nil
-	}
-}
-
 func PrepareSupervisor(t *testing.T, file string) *Supervisor {
 	Buf.Reset()
-	s := NewSupervisor("", NewManager())
-	if configs, err := PrepareConfigs(t, file); err != nil {
+	s := NewSupervisor(file, NewManager())
+	if jobs, err := LoadJobsFromFile(file); err != nil {
 		panic(err)
 	} else {
-		jobs := SetDefaults(configs)
 		s.Mgr.AddMultiJob(jobs)
 		return s
 	}
@@ -76,14 +63,4 @@ func LogsContain(t *testing.T, logs string, logStrings []string) {
 	if !ok || logs != "" {
 		t.Errorf("Log Error: Logs should contain:\n%s\nContains:\n%s\n", strings.Join(logStrings, "\n"), fullLogs)
 	}
-}
-
-//https:blog.sgmansfield.com/2015/12/goroutine-ids/
-func getGID() uint64 {
-	b := make([]byte, 64)
-	b = b[:runtime.Stack(b, false)]
-	b = bytes.TrimPrefix(b, []byte("goroutine "))
-	b = b[:bytes.IndexByte(b, ' ')]
-	n, _ := strconv.ParseUint(string(b), 10, 64)
-	return n
 }
