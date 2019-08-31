@@ -1,28 +1,33 @@
 package main
 
 import (
+	"os"
 	"sync"
 )
 
 type Supervisor struct {
 	Config  string
+	LogFile string
 	Mgr     *Manager
 	lock    sync.Mutex
 	restart bool
+	SigCh   chan os.Signal
 }
 
 //NewSupervisor returns a Supervisor new struct
-func NewSupervisor(file string, mgr *Manager) *Supervisor {
+func NewSupervisor(file string, mgr *Manager, sigCh chan os.Signal, LogFile string) *Supervisor {
 	return &Supervisor{
-		Config: file,
-		Mgr:    mgr,
+		Config:  file,
+		Mgr:     mgr,
+		SigCh:   sigCh,
+		LogFile: LogFile,
 	}
 }
 
 //DiffJobs sorts the given jobs into current, old, changed, and new slices
 func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
-	defer s.lock.Unlock()
 	s.lock.Lock()
+	defer s.lock.Unlock()
 	currentJobs, oldJobs, changedJobs, newJobs := []*Job{}, []*Job{}, []*Job{}, []*Job{}
 	for _, reloaded := range jobs {
 		if job, ok := s.Mgr.Jobs[reloaded.ID]; !ok {
@@ -78,13 +83,13 @@ func (s *Supervisor) WaitForExit() {
 }
 
 //StartJob retrieves & starts a given job
-func (s *Supervisor) StartJob(id int) error {
+func (s *Supervisor) StartJob(id int, wait bool) error {
 	var job *Job
 	var err error
 	if job, err = s.Mgr.GetJob(id); err != nil {
 		return err
 	}
-	job.Start(true)
+	job.Start(wait)
 	return nil
 }
 
@@ -108,8 +113,9 @@ func (s *Supervisor) GetJob(id int) (*Job, error) {
 
 //StartAllJobs starts all jobs & waits for start
 func (s *Supervisor) StartAllJobs(wait bool) {
-	ch := make(chan *Job)
 	s.Mgr.lock.Lock()
+	defer s.Mgr.lock.Unlock()
+	ch := make(chan *Job)
 	n := len(s.Mgr.Jobs)
 	for _, job := range s.Mgr.Jobs {
 		if job.AtLaunch {
@@ -122,13 +128,13 @@ func (s *Supervisor) StartAllJobs(wait bool) {
 	for i := 0; i < n; i++ {
 		<-ch
 	}
-	s.Mgr.lock.Unlock()
 }
 
 //StopAllJobs stops all jobs & waits for stop
 func (s *Supervisor) StopAllJobs(wait bool) {
-	ch := make(chan *Job)
 	s.Mgr.lock.Lock()
+	defer s.Mgr.lock.Unlock()
+	ch := make(chan *Job)
 	n := len(s.Mgr.Jobs)
 	for _, job := range s.Mgr.Jobs {
 		go func(job *Job) {
@@ -139,5 +145,21 @@ func (s *Supervisor) StopAllJobs(wait bool) {
 	for i := 0; i < n; i++ {
 		<-ch
 	}
-	s.Mgr.lock.Unlock()
+}
+
+//HasJob returns number of jobs being managed
+func (s *Supervisor) HasJob(id int) bool {
+	s.Mgr.lock.Lock()
+	defer s.Mgr.lock.Unlock()
+	_, ok := s.Mgr.Jobs[id]
+	return ok
+}
+
+//ForAllJobs performs a callback on the managed jobs
+func (s *Supervisor) ForAllJobs(f func(job *Job)) {
+	s.Mgr.lock.Lock()
+	defer s.Mgr.lock.Unlock()
+	for _, job := range s.Mgr.Jobs {
+		f(job)
+	}
 }

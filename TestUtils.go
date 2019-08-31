@@ -39,7 +39,7 @@ func MockLogger(out string) {
 
 func PrepareSupervisor(t *testing.T, file string) *Supervisor {
 	Buf.Reset()
-	s := NewSupervisor(file, NewManager())
+	s := NewSupervisor(file, NewManager(), make(chan os.Signal), "")
 	if jobs, err := LoadJobsFromFile(file); err != nil {
 		panic(err)
 	} else {
