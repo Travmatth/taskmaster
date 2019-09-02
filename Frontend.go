@@ -25,7 +25,7 @@ func FormatJobs(s *Supervisor) string {
 		for _, instance := range job.Instances {
 			var pid int
 			status := instance.GetStatus()
-			if instance.process != nil {
+			if instance.Status == PROCRUNNING && instance.process != nil {
 				pid = instance.process.Pid
 			} else {
 				pid = -1
@@ -60,12 +60,12 @@ Loop:
 			cmd := exec.Command("clear")
 			cmd.Stdout = os.Stdout
 			cmd.Run()
-		case cmd == "startAll":
+		case cmd == "startall" || cmd == "start all":
 			fmt.Println("Starting all jobs")
-			// s.StartAllJobs(false)
-		case cmd == "stopAll":
+			s.StartAllJobs(false)
+		case cmd == "stopall" || cmd == "stop all":
 			fmt.Println("Stopping all jobs")
-			// s.StopAllJobs(false)
+			s.StopAllJobs(false)
 		case strings.HasPrefix(cmd, "start"):
 			words := strings.Fields(cmd)
 			switch len(words) {
