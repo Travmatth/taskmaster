@@ -85,7 +85,7 @@ Loop:
 						fmt.Println("Error: Please enter a valid ID")
 					default:
 						fmt.Println("Starting", id)
-						// s.StartJob(id, false)
+						s.StartJob(id, false)
 						startLoop = false
 					}
 				}
@@ -105,7 +105,7 @@ Loop:
 						in = scanner.Text()
 					default:
 						fmt.Println("Starting", id)
-						// s.StartJob(id, false)
+						s.StartJob(id, false)
 						startLoop = false
 					}
 				}
@@ -129,7 +129,7 @@ Loop:
 						fmt.Println("Error: Please enter a valid ID")
 					default:
 						fmt.Println("Stopping", id)
-						// s.StopJob(id, false)
+						s.StopJob(id)
 						stopLoop = false
 					}
 				}
@@ -149,7 +149,7 @@ Loop:
 						in = scanner.Text()
 					default:
 						fmt.Println("Stopping", id)
-						// s.StopJob(id, false)
+						s.StopJob(id)
 						stopLoop = false
 					}
 				}
