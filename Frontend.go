@@ -23,8 +23,8 @@ func FormatJobs(s *Supervisor) string {
 	jobs := make([]string, 0)
 	s.ForAllJobs(func(job *Job) {
 		for _, instance := range job.Instances {
-			if instance.Status == PROCRUNNING {
-				jobs = append(jobs, fmt.Sprintf("%d %v %d %d\n", job.ID, instance.InstanceID, instance.state.Pid(), instance.Status))
+			if instance.process != nil {
+				jobs = append(jobs, fmt.Sprintf("%d %v %d %d\n", job.ID, instance.InstanceID, instance.process.Pid, instance.Status))
 			} else {
 				jobs = append(jobs, fmt.Sprintf("%d %v %d\n", job.ID, instance.InstanceID, instance.Status))
 			}
