@@ -54,6 +54,29 @@ type JobConfig struct {
 	Redirections
 }
 
+//Same compares two configuration files for equality
+func (c JobConfig) Same(cfg *JobConfig) bool {
+	if c.ID != cfg.ID ||
+		c.Command != cfg.Command ||
+		c.Instances != cfg.Instances ||
+		c.AtLaunch != cfg.AtLaunch ||
+		c.RestartPolicy != cfg.RestartPolicy ||
+		c.ExpectedExit != cfg.ExpectedExit ||
+		c.StartCheckup != cfg.StartCheckup ||
+		c.MaxRestarts != cfg.MaxRestarts ||
+		c.StopSignal != cfg.StopSignal ||
+		c.StopTimeout != cfg.StopTimeout ||
+		c.EnvVars != cfg.EnvVars ||
+		c.WorkingDir != cfg.WorkingDir ||
+		c.Umask != cfg.Umask ||
+		c.Redirections.Stdin != cfg.Redirections.Stdin ||
+		c.Redirections.Stdout != cfg.Redirections.Stdout ||
+		c.Redirections.Stderr != cfg.Redirections.Stderr {
+		return false
+	}
+	return true
+}
+
 //GetDefaultUmask obtains current file permissions
 func GetDefaultUmask() int {
 	defaultUmask := syscall.Umask(0)
@@ -73,9 +96,7 @@ func OpenRedir(val string, flag int) (*os.File, error) {
 	return nil, nil
 }
 
-/*
-ParseInt uses https://golang.org/pkg/reflect/ to dynamically set struct member to integer
-*/
+//ParseInt uses https://golang.org/pkg/reflect/ to dynamically set struct member to integer
 func ParseInt(c JobConfig, i *Instance, member string, defaultVal int, message string) error {
 	cfgVal, _ := reflections.GetField(c, member)
 
@@ -115,7 +136,7 @@ func ConfigureInstance(c JobConfig, i *Instance, umask int) error {
 	if c.MaxRestarts == "" {
 		i.MaxRestarts = 0
 	} else if val, err := strconv.Atoi(c.MaxRestarts); err != nil {
-		return fmt.Errorf("%v Error: invalid maxrestarts value\n", c)
+		return fmt.Errorf("%v Error: invalid maxrestarts value", c)
 	} else {
 		i.MaxRestarts = int32(val)
 	}
@@ -243,28 +264,6 @@ func LoadJobsFromFile(file string) ([]*Job, error) {
 	} else {
 		return SetDefaults(jobConfigs)
 	}
-}
-
-func (c JobConfig) Same(cfg *JobConfig) bool {
-	if c.ID != cfg.ID ||
-		c.Command != cfg.Command ||
-		c.Instances != cfg.Instances ||
-		c.AtLaunch != cfg.AtLaunch ||
-		c.RestartPolicy != cfg.RestartPolicy ||
-		c.ExpectedExit != cfg.ExpectedExit ||
-		c.StartCheckup != cfg.StartCheckup ||
-		c.MaxRestarts != cfg.MaxRestarts ||
-		c.StopSignal != cfg.StopSignal ||
-		c.StopTimeout != cfg.StopTimeout ||
-		c.EnvVars != cfg.EnvVars ||
-		c.WorkingDir != cfg.WorkingDir ||
-		c.Umask != cfg.Umask ||
-		c.Redirections.Stdin != cfg.Redirections.Stdin ||
-		c.Redirections.Stdout != cfg.Redirections.Stdout ||
-		c.Redirections.Stderr != cfg.Redirections.Stderr {
-		return false
-	}
-	return true
 }
 
 func (c JobConfig) String() string {

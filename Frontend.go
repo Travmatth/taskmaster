@@ -159,15 +159,15 @@ Loop:
 			fmt.Print(FormatJobs(s))
 		case strings.HasPrefix(cmd, "help"):
 			fmt.Println("Commands:")
-			fmt.Println("ps: List current jobs being managed")
-			fmt.Println("logs: display jobs logs")
-			fmt.Println("clear: clear the screen")
+			fmt.Println("ps:         List current jobs being managed")
+			fmt.Println("logs:       display jobs logs")
+			fmt.Println("clear:      clear the screen")
 			fmt.Println("start [id]: start given job")
-			fmt.Println("stop [id]: stop given job")
-			fmt.Println("startAll: start all jobs")
-			fmt.Println("stopAll: stop all jobs")
-			fmt.Println("reload: reload the configur file")
-			fmt.Println("exit: stop all jobs and exit taskmaster")
+			fmt.Println("stop [id]:  stop given job")
+			fmt.Println("startAll:   start all jobs")
+			fmt.Println("stopAll:    stop all jobs")
+			fmt.Println("reload:     reload the configur file")
+			fmt.Println("exit:       stop all jobs and exit taskmaster")
 		}
 		fmt.Print("> ")
 	}
