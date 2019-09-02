@@ -19,7 +19,7 @@ func TestTaskMasterStartStopSingle(t *testing.T) {
 	ch := make(chan error)
 	s := PrepareSupervisor(t, "procfiles/StartStopSingle.yaml")
 	go func() {
-		if err := s.StartJob(0); err != nil {
+		if err := s.StartJob(0, true); err != nil {
 			ch <- err
 		} else if err = s.StopJob(0); err != nil {
 			ch <- err
@@ -231,7 +231,7 @@ func TestTaskMasterKillAfterIgnoredStopSignal(t *testing.T) {
 	ch := make(chan error)
 	s := PrepareSupervisor(t, "procfiles/KillAfterIgnoredStopSignal.yaml")
 	go func() {
-		if err := s.StartJob(9); err != nil {
+		if err := s.StartJob(9, true); err != nil {
 			ch <- err
 		}
 		if err := s.StopJob(9); err != nil {
@@ -426,7 +426,7 @@ func TestTaskMasterStartStopMultipleInstances(t *testing.T) {
 	ch := make(chan error)
 	s := PrepareSupervisor(t, "procfiles/StartStopMultipleInstances.yaml")
 	go func() {
-		if err := s.StartJob(15); err != nil {
+		if err := s.StartJob(15, true); err != nil {
 			ch <- err
 		} else if err = s.StopJob(15); err != nil {
 			ch <- err

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
 
@@ -14,7 +15,8 @@ func processJobsFromFiles(files ...string) []*Job {
 }
 
 func TestSupervisorDiffJobs(t *testing.T) {
-	s := NewSupervisor("", NewManager())
+	ch := make(chan os.Signal)
+	s := NewSupervisor("", NewManager(), ch, "")
 	orig := processJobsFromFiles(
 		"procfiles/DiffCurrentJobs.yaml",
 		"procfiles/DiffOldJobs.yaml",
@@ -42,7 +44,8 @@ func TestSupervisorDiffJobs(t *testing.T) {
 }
 
 func TestSupervisorReloadJobs(t *testing.T) {
-	s := NewSupervisor("", NewManager())
+	ch := make(chan os.Signal)
+	s := NewSupervisor("", NewManager(), ch, "")
 	orig := processJobsFromFiles(
 		"procfiles/DiffCurrentJobs.yaml",
 		"procfiles/DiffOldJobs.yaml",

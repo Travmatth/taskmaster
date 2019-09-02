@@ -39,8 +39,8 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 			newJobs = append(newJobs, reloaded)
 			s.Mgr.RemoveJob(job.ID)
 		} else {
-			Log.Info("Supervisor diffing next jobs: current", reloaded)
-			currentJobs = append(currentJobs, reloaded)
+			Log.Info("Supervisor diffing next jobs: current", job)
+			currentJobs = append(currentJobs, job)
 			s.Mgr.RemoveJob(job.ID)
 		}
 	}
@@ -55,13 +55,10 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 // to determine which to stop, start, remove, or continue unchanged
 func (s *Supervisor) Reload(jobs []*Job, wait bool) error {
 	curr, old, changed, next := s.DiffJobs(jobs)
-	s.AddMultiJobs(curr)
 	for _, job := range append(old, changed...) {
 		job.Stop(wait)
 	}
-	for _, job := range append(curr, next...) {
-		s.Mgr.AddSingleJob(job)
-	}
+	s.AddMultiJobs(append(curr, next...))
 	for _, job := range next {
 		if job.AtLaunch {
 			job.Start(wait)
