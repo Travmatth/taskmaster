@@ -297,6 +297,29 @@ func (i *Instance) StopInstance(wait bool) {
 	}
 }
 
+func (i *Instance) GetStatus() string {
+	var status string
+	i.mutex.RLock()
+	defer i.mutex.RUnlock()
+	switch i.Status {
+	case PROCSTOPPED:
+		status = "stopped"
+	case PROCRUNNING:
+		status = "running"
+	case PROCSTART:
+		status = "start"
+	case PROCEXITED:
+		status = "exited"
+	case PROCBACKOFF:
+		status = "backoff"
+	case PROCSTOPPING:
+		status = "stopping"
+	default:
+		status = ""
+	}
+	return status
+}
+
 func (i *Instance) String() string {
 	return fmt.Sprintf("Job %d Instance %d", i.JobID, i.InstanceID)
 }

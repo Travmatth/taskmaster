@@ -131,6 +131,7 @@ func ManageSignals(s *Supervisor, config string, c chan os.Signal) {
 			s.Reload(reloadJobs, false)
 		}
 	} else {
+		Log.Info("Supervisor: exit signal received, shutting down")
 		s.StopAllJobs(true)
 		os.Exit(0)
 	}

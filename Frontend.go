@@ -16,21 +16,24 @@ func FormatIDs(s *Supervisor) string {
 	s.ForAllJobs(func(job *Job) {
 		jobs = append(jobs, fmt.Sprintf("%v: %s\n", job, job.Instances[0].args[0]))
 	})
-	return strings.Join(jobs, "\n") + "\n"
+	return strings.Join(jobs, "")
 }
 
 func FormatJobs(s *Supervisor) string {
 	jobs := make([]string, 0)
 	s.ForAllJobs(func(job *Job) {
 		for _, instance := range job.Instances {
+			var pid int
+			status := instance.GetStatus()
 			if instance.process != nil {
-				jobs = append(jobs, fmt.Sprintf("%d %v %d %d\n", job.ID, instance.InstanceID, instance.process.Pid, instance.Status))
+				pid = instance.process.Pid
 			} else {
-				jobs = append(jobs, fmt.Sprintf("%d %v %d\n", job.ID, instance.InstanceID, instance.Status))
+				pid = -1
 			}
+			jobs = append(jobs, fmt.Sprintf("%-12d%-12v%-12d%-12s\n", job.ID, instance.InstanceID, pid, status))
 		}
 	})
-	return strings.Join(jobs, "\n")
+	return strings.Join(jobs, "")
 }
 
 func StartUI(s *Supervisor) {
@@ -50,9 +53,9 @@ Loop:
 		case cmd == "logs":
 			data, err := ioutil.ReadFile(s.LogFile)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Print(err)
 			}
-			fmt.Println(string(data))
+			fmt.Print(string(data))
 		case cmd == "clear":
 			cmd := exec.Command("clear")
 			cmd.Stdout = os.Stdout
@@ -70,7 +73,9 @@ Loop:
 				startLoop := true
 				for startLoop {
 					fmt.Println("Please select an ID")
-					fmt.Println(FormatIDs(s))
+					fmt.Print(FormatIDs(s))
+					fmt.Print("> ")
+					scanner.Scan()
 					in := scanner.Text()
 					id, idErr := strconv.Atoi(in)
 					switch {
@@ -94,7 +99,8 @@ Loop:
 						fallthrough
 					case !s.HasJob(id):
 						fmt.Println("Error: Please enter a valid ID")
-						fmt.Println(FormatIDs(s))
+						fmt.Print(FormatIDs(s))
+						fmt.Print("> ")
 						scanner.Scan()
 						in = scanner.Text()
 					default:
@@ -111,7 +117,9 @@ Loop:
 				stopLoop := true
 				for stopLoop {
 					fmt.Println("Please select an ID")
-					fmt.Println(FormatIDs(s))
+					fmt.Print(FormatIDs(s))
+					fmt.Print("> ")
+					scanner.Scan()
 					in := scanner.Text()
 					id, idErr := strconv.Atoi(in)
 					switch {
@@ -135,7 +143,8 @@ Loop:
 						fallthrough
 					case !s.HasJob(id):
 						fmt.Println("Error: Please enter a valid ID")
-						fmt.Println(FormatIDs(s))
+						fmt.Print(FormatIDs(s))
+						fmt.Print("> ")
 						scanner.Scan()
 						in = scanner.Text()
 					default:
@@ -146,7 +155,8 @@ Loop:
 				}
 			}
 		case strings.HasPrefix(cmd, "ps"):
-			fmt.Println(FormatJobs(s))
+			fmt.Printf("%-12s%-12s%-12s%-12s\n", "ID", "Instance", "PID", "Status")
+			fmt.Print(FormatJobs(s))
 		case strings.HasPrefix(cmd, "help"):
 			fmt.Println("Commands:")
 			fmt.Println("ps: List current jobs being managed")
@@ -159,6 +169,7 @@ Loop:
 			fmt.Println("reload: reload the configur file")
 			fmt.Println("exit: stop all jobs and exit taskmaster")
 		}
+		fmt.Print("> ")
 	}
 	if err := scanner.Err(); err != nil {
 		if err != io.EOF {
