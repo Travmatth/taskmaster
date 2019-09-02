@@ -130,9 +130,10 @@ func ManageSignals(s *Supervisor, config string, c chan os.Signal) {
 			Log.Info("Supervisor: signal", sig, "received, reloading", config)
 			s.Reload(reloadJobs, false)
 		}
-	} else {
+	} else if sig == syscall.SIGTERM || sig == syscall.SIGINT {
 		Log.Info("Supervisor: exit signal received, shutting down")
 		s.StopAllJobs(true)
 		os.Exit(0)
 	}
+	go ManageSignals(s, config, c)
 }
