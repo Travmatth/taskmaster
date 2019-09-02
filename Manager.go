@@ -62,3 +62,11 @@ func (m *Manager) GetAllJobs(id int) []*Job {
 	}
 	return jobs
 }
+
+func (m *Manager) ForAllJobs(f func(job *Job)) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	for _, job := range m.Jobs {
+		f(job)
+	}
+}

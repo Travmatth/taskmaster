@@ -297,6 +297,44 @@ func (i *Instance) StopInstance(wait bool) {
 	}
 }
 
+func (i *Instance) GetPid() int {
+	i.mutex.RLock()
+	defer i.mutex.RUnlock()
+	if i.Status == PROCRUNNING {
+		return i.process.Pid
+	}
+	return -1
+}
+
+func (i *Instance) GetStatus() string {
+	var status string
+	i.mutex.RLock()
+	defer i.mutex.RUnlock()
+	switch i.Status {
+	case PROCSTOPPED:
+		status = "stopped"
+	case PROCRUNNING:
+		status = "running"
+	case PROCSTART:
+		status = "start"
+	case PROCEXITED:
+		status = "exited"
+	case PROCBACKOFF:
+		status = "backoff"
+	case PROCSTOPPING:
+		status = "stopping"
+	default:
+		status = ""
+	}
+	return status
+}
+
 func (i *Instance) String() string {
+	if i.process != nil {
+		i.mutex.RLock()
+		defer i.mutex.RUnlock()
+		pid := i.process.Pid
+		return fmt.Sprintf("Job %d Instance %d Pid %d", i.JobID, i.InstanceID, pid)
+	}
 	return fmt.Sprintf("Job %d Instance %d", i.JobID, i.InstanceID)
 }

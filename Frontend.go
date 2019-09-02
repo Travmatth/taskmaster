@@ -16,21 +16,25 @@ func FormatIDs(s *Supervisor) string {
 	s.ForAllJobs(func(job *Job) {
 		jobs = append(jobs, fmt.Sprintf("%v: %s\n", job, job.Instances[0].args[0]))
 	})
-	return strings.Join(jobs, "\n") + "\n"
+	return strings.Join(jobs, "") + "\n"
 }
 
 func FormatJobs(s *Supervisor) string {
 	jobs := make([]string, 0)
+	var pid int
+	fmt.Printf("%-12v%-12v%-12v%-12v\n", "ID", "Instance", "PID", "Status")
 	s.ForAllJobs(func(job *Job) {
 		for _, instance := range job.Instances {
-			if instance.Status == PROCRUNNING {
-				jobs = append(jobs, fmt.Sprintf("%d %v %d %d\n", job.ID, instance.InstanceID, instance.state.Pid(), instance.Status))
+			status := instance.GetStatus()
+			if instance.process != nil {
+				pid = instance.GetPid()
 			} else {
-				jobs = append(jobs, fmt.Sprintf("%d %v %d\n", job.ID, instance.InstanceID, instance.Status))
+				pid = -1
 			}
+			jobs = append(jobs, fmt.Sprintf("%-12d%-12v%-12d%-12s\n", job.ID, instance.InstanceID, pid, status))
 		}
 	})
-	return strings.Join(jobs, "\n")
+	return strings.Join(jobs, "")
 }
 
 func StartUI(s *Supervisor) {
@@ -140,24 +144,28 @@ Loop:
 						in = scanner.Text()
 					default:
 						fmt.Println("Stopping", id)
-						// s.StopJob(id, false)
+						s.StopJob(id, false)
 						stopLoop = false
+						fmt.Print("> ")
 					}
 				}
 			}
 		case strings.HasPrefix(cmd, "ps"):
 			fmt.Println(FormatJobs(s))
+			fmt.Print("> ")
 		case strings.HasPrefix(cmd, "help"):
 			fmt.Println("Commands:")
-			fmt.Println("ps: List current jobs being managed")
-			fmt.Println("logs: display jobs logs")
-			fmt.Println("clear: clear the screen")
-			fmt.Println("start [id]: start given job")
-			fmt.Println("stop [id]: stop given job")
-			fmt.Println("startAll: start all jobs")
-			fmt.Println("stopAll: stop all jobs")
-			fmt.Println("reload: reload the configur file")
-			fmt.Println("exit: stop all jobs and exit taskmaster")
+			fmt.Printf("%-14s %s\n", "ps:", " List current jobs being managed")
+			fmt.Printf("%-14s %s\n", "logs:", " display jobs logs")
+			fmt.Printf("%-14s %s\n", "clear:", " clear the screen")
+			fmt.Printf("%-14s %s\n", "start[id]: ", " start given job")
+			fmt.Printf("%-14s %s\n", "stop[id]: ", " stop given job")
+			fmt.Printf("%-14s %s\n", "startAll:", " start all jobs")
+			fmt.Printf("%-14s %s\n", "stopAll:", " stop all jobs")
+			fmt.Printf("%-14s %s\n", "reload:", " reload the configur file")
+			fmt.Printf("%-14s %s\n> ", "exit:", " stop all jobs and exit taskmaster")
+		default:
+			fmt.Print("Error: unrecognized command\n> ")
 		}
 	}
 	if err := scanner.Err(); err != nil {

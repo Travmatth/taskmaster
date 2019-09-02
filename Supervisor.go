@@ -157,9 +157,7 @@ func (s *Supervisor) HasJob(id int) bool {
 
 //ForAllJobs performs a callback on the managed jobs
 func (s *Supervisor) ForAllJobs(f func(job *Job)) {
-	s.Mgr.lock.Lock()
-	defer s.Mgr.lock.Unlock()
-	for _, job := range s.Mgr.Jobs {
-		f(job)
-	}
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.Mgr.ForAllJobs(f)
 }
