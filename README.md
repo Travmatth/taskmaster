@@ -46,7 +46,7 @@ exit:       stop all jobs and exit taskmaster
 - [x] Start / stop / restart programs
 - [x] Reload the configuration file without stopping the main program
 - [x] Stop the main program
-The configuration file must allow the user to specify the following, for each program that is to b be supervised:
+The configuration file must allow the user to specify the following, for each program that is to be supervised:
 - [x] The command to use to launch the program
 - [x] The number of processes to start and keep running
 - [x] Whether to start this program at launch or not
