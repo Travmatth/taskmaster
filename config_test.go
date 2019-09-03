@@ -25,7 +25,7 @@ func TestConfigOpenRedirErrorsOnBadFile(t *testing.T) {
 
 func TestConfigOpenRedirOpensFile(t *testing.T) {
 	if f, err := OpenRedir("procfiles/basic.yaml", 0); err != nil {
-		t.Errorf("OpenRedir should open valid file without error")
+		t.Error("OpenRedir should open valid file without error:", err)
 	} else if f == nil {
 		t.Errorf("OpenRedir should open valid file")
 	} else {

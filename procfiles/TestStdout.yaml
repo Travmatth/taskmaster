@@ -1,0 +1,31 @@
+# an id to uniquely identify the process
+- id: 20
+# The command to use to launch the program
+  command: /bin/ls -R /
+# The number of processes to start and keep running
+  instances: 1
+# Whether to start this program at launch or not
+  atLaunch: true
+# Whether the program should be restarted always, never, or on unexpected exits only
+  restartPolicy: never
+# Which return codes represent an "expected" exit Status
+  expectedExit: 0
+# How long the program should be running after it’s started for it to be considered "successfully started"
+  startCheckup: 0
+# How many times a restart should be attempted before aborting
+  maxRestarts: 0
+# Which signal should be used to stop (i.e. exit gracefully) the program
+  stopSignal: SIGINT
+# How long to wait after a graceful stop before killing the program
+  StopTimeout: 0
+# Options to discard the program’s stdout/stderr or to redirect them to files
+  redirections:
+    stdin:
+    stdout: test/TestStdout.test
+    stderr:
+# Environment variables to set before launching the program
+  envVars:
+# A working directory to set before launching the program
+  workingDir:
+# An umask to set before launching the program
+  umask:

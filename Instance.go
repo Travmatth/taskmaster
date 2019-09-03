@@ -22,6 +22,8 @@ const (
 	PROCBACKOFF
 	//PROCSTOPPING signifies in process of stopping
 	PROCSTOPPING
+	//PROCSTARTFAIL signifies process could not start successfully
+	PROCSTARTFAIL
 )
 
 const (
@@ -88,10 +90,13 @@ func (i *Instance) StartInstance(wait bool) {
 					cond.Signal()
 				}
 			})
+			for i.Status == PROCBACKOFF {
+				time.Sleep(time.Duration(10) * time.Millisecond)
+			}
 			if i.Stopped {
 				Log.Info(i, ": stopped by user, not restarting")
 				break
-			} else if i.process == nil {
+			} else if i.process == nil || i.Status == PROCSTARTFAIL {
 				break
 			} else if i.restartPolicy == RESTARTNEVER {
 				Log.Info(i, ": restart policy specifies do not restart")
@@ -181,6 +186,7 @@ func (i *Instance) Run(callback func()) {
 		}
 		restart := atomic.LoadInt32(i.Restarts)
 		if restart >= i.MaxRestarts {
+			i.ChangeStatus(PROCSTARTFAIL)
 			i.JobCreateFailure(callback, fmt.Sprintf("Failed to start maximum retries reached"))
 			break
 		} else {
@@ -314,6 +320,8 @@ func (i *Instance) GetStatus() string {
 		status = "backoff"
 	case PROCSTOPPING:
 		status = "stopping"
+	case PROCSTARTFAIL:
+		status = "start failed"
 	default:
 		status = ""
 	}
