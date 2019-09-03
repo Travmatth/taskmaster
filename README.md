@@ -37,7 +37,7 @@ stop [id]:  stop given job
 startAll:   start all jobs
 stopAll:    stop all jobs
 reload:     reload the configuration file
-exit:       stop all jobs and exit taskmaste
+exit:       stop all jobs and exit taskmaster
 ```
 
 # Requirements:
