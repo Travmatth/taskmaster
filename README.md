@@ -1,10 +1,10 @@
-#TaskMaster: A process manager
+# TaskMaster: A process manager
 
 `Usage: ./taskmaster <Config_File> <Log_File> [Log_level]`
 
 Taskmaster accepts a config file containing a list of processes to start, along with the options managing their execution and termination. Provides a simple UI to manage processes.
 
-#Configuration:
+# Configuration:
 
 ```
 - id: an ID to identify the process, must be unique
@@ -26,7 +26,7 @@ Taskmaster accepts a config file containing a list of processes to start, along 
   umask: [int] umask to set the process permissions
 ```
 
-#UI Commands
+# UI Commands
 
 ```
 ps:         List current jobs being managed
@@ -40,7 +40,7 @@ reload:     reload the configuration file
 exit:       stop all jobs and exit taskmaste
 ```
 
-#Requirements:
+# Requirements:
 
 - [x] See the Status of all the programs described in the config file ("Status" command)
 - [x] Start / stop / restart programs
