@@ -63,6 +63,11 @@ type Instance struct {
 	finishedCh    chan struct{}
 }
 
+/*
+StartInstance manages the execution of a process by launching a process by calling instance.Run()
+and rerunning the process after exit if restartPolicy == always
+or restartPolicy == unexpected && the exit code does not match the exit code specified in the config
+*/
 func (i *Instance) StartInstance(wait bool) {
 	i.mutex.Lock()
 	if i.starting {
@@ -79,6 +84,7 @@ func (i *Instance) StartInstance(wait bool) {
 		cond.L.Lock()
 	}
 	go func() {
+	Rerun:
 		for {
 			if wait {
 				cond.L.Lock()
@@ -93,26 +99,8 @@ func (i *Instance) StartInstance(wait bool) {
 			for i.Status == PROCBACKOFF {
 				time.Sleep(time.Duration(10) * time.Millisecond)
 			}
-			if i.Stopped {
-				Log.Info(i, ": stopped by user, not restarting")
-				break
-			} else if i.process == nil || i.Status == PROCSTARTFAIL {
-				break
-			} else if i.restartPolicy == RESTARTNEVER {
-				Log.Info(i, ": restart policy specifies do not restart")
-				break
-			} else if i.restartPolicy == RESTARTUNEXPECTED {
-				end := true
-				i.mutex.RLock()
-				exit := i.state.ExitCode()
-				if exit != i.ExpectedExit {
-					Log.Info(i, ": Encountered unexpected exit code", exit, ", restarting")
-					end = false
-				}
-				i.mutex.RUnlock()
-				if end {
-					break
-				}
+			if !i.shouldRerunInstance() {
+				break Rerun
 			}
 		}
 		i.mutex.Lock()
@@ -125,7 +113,40 @@ func (i *Instance) StartInstance(wait bool) {
 	}
 }
 
-//Run execs job
+/*
+shouldRerunInstance determines whether the process has exited due to a failed start
+or a successful execution, and if the process should be rerun (when restartPolicy == always or unexpected)
+*/
+func (i *Instance) shouldRerunInstance() bool {
+	switch {
+	case i.Stopped:
+		Log.Info(i, ": stopped by user, not restarting")
+		return false
+	case i.process == nil || i.Status == PROCSTARTFAIL:
+		return false
+	case i.restartPolicy == RESTARTNEVER:
+		Log.Info(i, ": restart policy specifies do not restart")
+		return false
+	case i.restartPolicy == RESTARTUNEXPECTED:
+		end := true
+		i.mutex.RLock()
+		exit := i.state.ExitCode()
+		if exit != i.ExpectedExit {
+			Log.Info(i, ": Encountered unexpected exit code", exit, ", restarting")
+			end = false
+		}
+		i.mutex.RUnlock()
+		if end {
+			return false
+		}
+	}
+	return true
+}
+
+/*
+Run launches the process and monitors the start, restarting if start has failed
+on successful start, waits for process to complete and sends a finished message on finishedCh
+*/
 func (i *Instance) Run(callback func()) {
 	defer i.mutex.Unlock()
 	i.mutex.Lock()
@@ -137,18 +158,15 @@ func (i *Instance) Run(callback func()) {
 	i.StartTime = time.Now()
 	atomic.StoreInt32(i.Restarts, 0)
 	var once sync.Once
-	callbackWrapper := func() {
-		once.Do(callback)
-	}
 	for !i.Stopped {
-		end := time.Now().Add(time.Duration(i.StartCheckup) * time.Second)
 		i.ChangeStatus(PROCSTART)
 		atomic.AddInt32(i.Restarts, 1)
 		if err := i.CreateJob(); err != nil {
 			restarts := atomic.LoadInt32(i.Restarts)
 			if restarts > i.MaxRestarts {
 				errStr := fmt.Sprintf("failed to start with error: %s", err)
-				i.JobCreateFailure(callback, errStr)
+				Log.Info(i, ": Creation failed:", errStr)
+				callback()
 				break
 			} else {
 				Log.Info(i, ": failed to start with error:", err)
@@ -156,46 +174,63 @@ func (i *Instance) Run(callback func()) {
 				continue
 			}
 		}
-		monitorExited := int32(0)
-		programExited := int32(0)
-		if i.StartCheckup <= 0 {
-			Log.Info(i, ": Successfully Started with no start checkup")
-			i.ChangeStatus(PROCRUNNING)
-			go callbackWrapper()
-		} else {
-			go func() {
-				i.MonitorProgramRunning(callbackWrapper, end, &monitorExited, &programExited)
-			}()
-		}
-		i.mutex.Unlock()
-		i.WaitForExit()
-		atomic.StoreInt32(&programExited, 1)
-		for i.StartCheckup > 0 && atomic.LoadInt32(&monitorExited) == 0 {
-			time.Sleep(time.Duration(10) * time.Millisecond)
-		}
-		i.mutex.Lock()
-		if i.Status == PROCRUNNING {
-			i.ChangeStatus(PROCEXITED)
-			select {
-			case i.finishedCh <- struct{}{}:
-			default:
-			}
+		i.manageRunningProgram(func() {
+			once.Do(callback)
+		})
+		if !i.shouldRestartInstance(callback) {
 			break
-		} else {
-			i.ChangeStatus(PROCBACKOFF)
-		}
-		restart := atomic.LoadInt32(i.Restarts)
-		if restart >= i.MaxRestarts {
-			i.ChangeStatus(PROCSTARTFAIL)
-			i.JobCreateFailure(callback, fmt.Sprintf("Failed to start maximum retries reached"))
-			break
-		} else {
-			Log.Info(i, ": Start failed, restarting")
 		}
 	}
 }
 
-//CreateJob launches process
+/*
+manageRunningProgram watches the running process, notifying the parent once it has successfully started
+and then waiting for process exit
+*/
+func (i *Instance) manageRunningProgram(callbackWrapper func()) {
+	end := time.Now().Add(time.Duration(i.StartCheckup) * time.Second)
+	monitorExited := int32(0)
+	programExited := int32(0)
+	if i.StartCheckup <= 0 {
+		Log.Info(i, ": Successfully Started with no start checkup")
+		i.ChangeStatus(PROCRUNNING)
+		go callbackWrapper()
+	} else {
+		go func() {
+			i.startCheckup(callbackWrapper, end, &monitorExited, &programExited)
+		}()
+	}
+	i.mutex.Unlock()
+	i.WaitForExit()
+	atomic.StoreInt32(&programExited, 1)
+	for i.StartCheckup > 0 && atomic.LoadInt32(&monitorExited) == 0 {
+		time.Sleep(time.Duration(10) * time.Millisecond)
+	}
+}
+
+//shouldRestartInstance determines whether process has successfully started, or should restart
+func (i *Instance) shouldRestartInstance(callback func()) bool {
+	i.mutex.Lock()
+	if i.Status == PROCRUNNING {
+		i.ChangeStatus(PROCEXITED)
+		select {
+		case i.finishedCh <- struct{}{}:
+		default:
+		}
+		return false
+	}
+	i.ChangeStatus(PROCBACKOFF)
+	if atomic.LoadInt32(i.Restarts) >= i.MaxRestarts {
+		i.ChangeStatus(PROCSTARTFAIL)
+		Log.Info(i, ": Creation failed:", fmt.Sprintf("Failed to start maximum retries reached"))
+		callback()
+		return false
+	}
+	Log.Info(i, ": Start failed, restarting")
+	return true
+}
+
+//CreateJob creates & launches process
 func (i *Instance) CreateJob() error {
 	defaultUmask := syscall.Umask(i.Umask)
 	defer syscall.Umask(defaultUmask)
@@ -237,14 +272,8 @@ func (i *Instance) PIDExists() bool {
 	return false
 }
 
-//JobCreateFailure registers the failure of attempt to create job
-func (i *Instance) JobCreateFailure(callback func(), errStr string) {
-	Log.Info(i, ": Creation failed:", errStr)
-	callback()
-}
-
-// MonitorProgramRunning checks the run status of the program after exit
-func (i *Instance) MonitorProgramRunning(callback func(), end time.Time, monitor *int32, program *int32) {
+//startCheckup checks that the process has successfully started after the specified start checkup time
+func (i *Instance) startCheckup(callback func(), end time.Time, monitor *int32, program *int32) {
 	for time.Now().Before(end) && atomic.LoadInt32(program) == 0 {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
@@ -266,30 +295,15 @@ func (i *Instance) ChangeStatus(state int) {
 	i.Status = state
 }
 
-// Need to expand signal sending to -pid, target all in process group
+/*
+StopInstance is used to stop the process by sending the specified stop signal
+or the SIGKILL signal if the stop signal is not received
+*/
 func (i *Instance) StopInstance(wait bool) {
 	i.mutex.Lock()
 	i.Stopped = true
 	i.mutex.Unlock()
-	go func() {
-		i.mutex.RLock()
-		if i.process != nil {
-			Log.Info(i, ": Sending Signal", i.StopSignal)
-			i.process.Signal(i.StopSignal)
-		}
-		i.mutex.RUnlock()
-		select {
-		case <-time.After(time.Duration(i.StopTimeout) * time.Second):
-			Log.Info(i, ": did not stop after timeout of ", i.StopTimeout, "seconds SIGKILL issued")
-			if i.process != nil {
-				i.process.Signal(Signals["SIGKILL"])
-				<-i.finishedCh
-			}
-			break
-		case <-i.finishedCh:
-			break
-		}
-	}()
+	go i.stopTimeout()
 	if wait {
 		for {
 			i.mutex.RLock()
@@ -303,8 +317,31 @@ func (i *Instance) StopInstance(wait bool) {
 	}
 }
 
+/*
+stopTimeout signals the process to stop using the specified signal
+if wait() is not called then a SIGKILL is sent to the process
+*/
+func (i *Instance) stopTimeout() {
+	i.mutex.RLock()
+	if i.process != nil {
+		Log.Info(i, ": Sending Signal", i.StopSignal)
+		i.process.Signal(i.StopSignal)
+	}
+	i.mutex.RUnlock()
+	select {
+	case <-time.After(time.Duration(i.StopTimeout) * time.Second):
+		Log.Info(i, ": did not stop after timeout of ", i.StopTimeout, "seconds SIGKILL issued")
+		if i.process != nil {
+			i.process.Signal(Signals["SIGKILL"])
+			<-i.finishedCh
+		}
+	case <-i.finishedCh:
+	}
+}
+
+//GetStatus return status of the process
 func (i *Instance) GetStatus() string {
-	var status string
+	status := ""
 	i.mutex.RLock()
 	defer i.mutex.RUnlock()
 	switch i.Status {
@@ -322,8 +359,6 @@ func (i *Instance) GetStatus() string {
 		status = "stopping"
 	case PROCSTARTFAIL:
 		status = "start failed"
-	default:
-		status = ""
 	}
 	return status
 }
