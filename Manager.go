@@ -62,3 +62,15 @@ func (m *Manager) GetAllJobs(id int) []*Job {
 	}
 	return jobs
 }
+
+//RestartJob retrieves & restarts a given job
+func (m *Manager) RestartJob(id int, wait bool) error {
+	var job *Job
+	var err error
+	if job, err = m.GetJob(id); err != nil {
+		return err
+	}
+	job.Stop(true)
+	job.Start(wait)
+	return nil
+}

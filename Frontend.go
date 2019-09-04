@@ -110,6 +110,50 @@ Loop:
 					}
 				}
 			}
+		case strings.HasPrefix(cmd, "restart"):
+			words := strings.Fields(cmd)
+			switch len(words) {
+			case 1:
+				startLoop := true
+				for startLoop {
+					fmt.Println("Please select an ID")
+					fmt.Print(FormatIDs(s))
+					fmt.Print("> ")
+					scanner.Scan()
+					in := scanner.Text()
+					id, idErr := strconv.Atoi(in)
+					switch {
+					case idErr != nil:
+						fallthrough
+					case !s.HasJob(id):
+						fmt.Println("Error: Please enter a valid ID")
+					default:
+						fmt.Println("Restarting", id)
+						s.RestartJob(id, false)
+						startLoop = false
+					}
+				}
+			case 2:
+				startLoop := true
+				in := words[1]
+				for startLoop {
+					id, idErr := strconv.Atoi(in)
+					switch {
+					case idErr != nil:
+						fallthrough
+					case !s.HasJob(id):
+						fmt.Println("Error: Please enter a valid ID")
+						fmt.Print(FormatIDs(s))
+						fmt.Print("> ")
+						scanner.Scan()
+						in = scanner.Text()
+					default:
+						fmt.Println("Restarting", id)
+						s.RestartJob(id, false)
+						startLoop = false
+					}
+				}
+			}
 		case strings.HasPrefix(cmd, "stop"):
 			words := strings.Fields(cmd)
 			switch len(words) {
@@ -163,6 +207,7 @@ Loop:
 			fmt.Println("logs:       display jobs logs")
 			fmt.Println("clear:      clear the screen")
 			fmt.Println("start [id]: start given job")
+			fmt.Println("restart [id]: restart given job")
 			fmt.Println("stop [id]:  stop given job")
 			fmt.Println("startAll:   start all jobs")
 			fmt.Println("stopAll:    stop all jobs")

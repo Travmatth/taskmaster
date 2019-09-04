@@ -90,6 +90,11 @@ func (s *Supervisor) StartJob(id int, wait bool) error {
 	return nil
 }
 
+//RestartJob retrieves & restarts a given job
+func (s *Supervisor) RestartJob(id int, wait bool) error {
+	return s.Mgr.RestartJob(id, wait)
+}
+
 //StopJob retrieves & stops a given job
 func (s *Supervisor) StopJob(id int) error {
 	var job *Job
