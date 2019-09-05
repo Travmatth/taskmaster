@@ -78,3 +78,52 @@ func TestSupervisorReloadJobs(t *testing.T) {
 	})
 	Buf.Reset()
 }
+
+func TestSupervisorReloadJobsScaleUp(t *testing.T) {
+	s := PrepareSupervisor(t, "procfiles/DiffCurrentJobs.yaml")
+	s.StartAllJobs(true)
+	job, _ := s.GetJob(17)
+	orig := job.Instances[0].StartTime
+	next, _ := LoadJobsFromFile("procfiles/DiffChangedJobs.yaml")
+	s.Reload(next, true)
+	LogsContain(t, Buf.String(), []string{
+		"Job 17 Instance 0 : Successfully Started with no start checkup",
+		"Job 16 Instance 0 : Successfully Started with no start checkup",
+		"Supervisor diffing next jobs: changed Job 17",
+		"Job 16 Instance 0 : Sending Signal interrupt",
+		"Job 16 Instance 0 : exited with status: signal: interrupt",
+		"Job 16 Instance 0 : stopped by user, not restarting",
+		"Job 17 Instance 1 : Successfully Started with no start checkup",
+	})
+	newJob, _ := s.GetJob(17)
+	nextTime := newJob.Instances[0].StartTime
+	if !orig.Equal(nextTime) {
+		t.Errorf("Error: Supervisor shouldn't replace running instances when scaling up")
+	}
+	Buf.Reset()
+}
+
+func TestSupervisorReloadJobsScaleDown(t *testing.T) {
+	s := PrepareSupervisor(t, "procfiles/DiffChangedJobs.yaml")
+	s.StartAllJobs(true)
+	job, _ := s.GetJob(17)
+	orig := job.Instances[0].StartTime
+	next, _ := LoadJobsFromFile("procfiles/DiffCurrentJobs.yaml")
+	s.Reload(next, true)
+	LogsContain(t, Buf.String(), []string{
+		"Job 17 Instance 0 : Successfully Started with no start checkup",
+		"Job 17 Instance 1 : Successfully Started with no start checkup",
+		"Supervisor diffing next jobs: new Job 16",
+		"Supervisor diffing next jobs: changed Job 17",
+		"Job 17 Instance 1 : Sending Signal interrupt",
+		"Job 17 Instance 1 : exited with status: signal: interrupt",
+		"Job 17 Instance 1 : stopped by user, not restarting",
+		"Job 16 Instance 0 : Successfully Started with no start checkup",
+	})
+	newJob, _ := s.GetJob(17)
+	nextTime := newJob.Instances[0].StartTime
+	if !orig.Equal(nextTime) {
+		t.Errorf("Error: Supervisor shouldn't replace running instances when scaling down")
+	}
+	Buf.Reset()
+}
