@@ -10,8 +10,8 @@
   stopTimeout: 0
   redirections:
     stdin:
-    stdout: test/SetWorkingDir.test
+    stdout: test_scripts/SetWorkingDir.test
     stderr:
   envVars:
-  workingDir: test
+  workingDir: test_scripts
   umask:

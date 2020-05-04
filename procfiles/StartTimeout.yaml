@@ -1,5 +1,5 @@
 - id: 8
-  command: ./test/starttimeout.sh
+  command: ./test_scripts/starttimeout.sh
   instances: 1
   atLaunch: true
   restartPolicy: never

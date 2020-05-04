@@ -1,5 +1,5 @@
 - id: 11
-  command: ./test/write_stderr.sh
+  command: ./test_scripts/write_stderr.sh
   instances: 1
   atLaunch: true
   restartPolicy: never
@@ -11,7 +11,7 @@
   redirections:
     stdin:
     stdout:
-    stderr: test/RedirectStderr.test
+    stderr: test_scripts/RedirectStderr.test
   envVars:
   workingDir:
   umask:

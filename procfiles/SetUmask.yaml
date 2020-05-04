@@ -1,5 +1,5 @@
 - id: 14
-  command: ./test/write_with_umask.sh
+  command: ./test_scripts/write_with_umask.sh
   instances: 1
   atLaunch: true
   restartPolicy: never
@@ -10,8 +10,8 @@
   stopTimeout: 0
   redirections:
     stdin:
-    stdout: test/SetUmask.test
-    stderr: test/SetUmask.test
+    stdout: test_scripts/SetUmask.test
+    stderr: test_scripts/SetUmask.test
   envVars:
   workingDir:
   umask: 0

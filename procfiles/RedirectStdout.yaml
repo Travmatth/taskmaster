@@ -1,5 +1,5 @@
 - id: 10
-  command: ./test/write_stdout.sh
+  command: ./test_scripts/write_stdout.sh
   instances: 1
   atLaunch: true
   restartPolicy: never
@@ -10,7 +10,7 @@
   stopTimeout: 3
   redirections:
     stdin:
-    stdout: test/RedirectStdout.test
+    stdout: test_scripts/RedirectStdout.test
     stderr:
   envVars:
   workingDir:

@@ -1,5 +1,5 @@
 #!/bin/bash
-FILE=test/taskmaster_startfail_tmp
+FILE=test_scripts/taskmaster_startfail_tmp
 if [ ! -f "$FILE" ]; then
     touch $FILE
     echo '1' > $FILE

@@ -1,5 +1,5 @@
 - id: 4
-  command: ./test/startfails.sh
+  command: ./test_scripts/startfails.sh
   instances: 1
   atLaunch: true
   restartPolicy: unexpected

@@ -1,5 +1,5 @@
 - id: 12
-  command: ./test/write_envvars.sh
+  command: ./test_scripts/write_envvars.sh
   instances: 1
   atLaunch: true
   restartPolicy: never
@@ -10,7 +10,7 @@
   stopTimeout: 3
   redirections:
     stdin: 
-    stdout: test/EnvVars.test
+    stdout: test_scripts/EnvVars.test
     stderr:
   envVars: A=env B=vars C=working
   workingDir:

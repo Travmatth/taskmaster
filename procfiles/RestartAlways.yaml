@@ -1,5 +1,5 @@
 - id: 7
-  command: ./test/expectedexit.sh
+  command: ./test_scripts/expectedexit.sh
   instances: 1
   atLaunch: true
   restartPolicy: always

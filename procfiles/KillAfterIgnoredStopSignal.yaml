@@ -1,5 +1,5 @@
 - id: 9
-  command: ./test/sleep_sigint_trap.sh
+  command: ./test_scripts/sleep_sigint_trap.sh
   instances: 1
   atLaunch: true
   restartPolicy: never
@@ -10,7 +10,7 @@
   stopTimeout: 3
   redirections:
     stdin:
-    stdout: test/KillAfterIgnoredStopSignal.test
+    stdout: test_scripts/KillAfterIgnoredStopSignal.test
     stderr:
   envVars:
   workingDir:

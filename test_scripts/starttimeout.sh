@@ -1,5 +1,5 @@
 #!/bin/bash
-FILE=test/taskmaster_starttimeout_tmp
+FILE=test_scripts/taskmaster_starttimeout_tmp
 if [ ! -f "$FILE" ]; then
     touch $FILE
     exit 1

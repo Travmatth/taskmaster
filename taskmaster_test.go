@@ -245,7 +245,7 @@ func TestTaskMasterStartTimeout(t *testing.T) {
 }
 
 func TestTaskMasterKillAfterIgnoredStopSignal(t *testing.T) {
-	test := "test/KillAfterIgnoredStopSignal.test"
+	test := "test_scripts/KillAfterIgnoredStopSignal.test"
 	ch := make(chan error)
 	s := PrepareSupervisor(t, "procfiles/KillAfterIgnoredStopSignal.yaml")
 	go func() {
@@ -285,7 +285,7 @@ func TestTaskMasterKillAfterIgnoredStopSignal(t *testing.T) {
 }
 
 func TestTaskMasterRedirectStdout(t *testing.T) {
-	testFile := "test/RedirectStdout.test"
+	testFile := "test_scripts/RedirectStdout.test"
 	ch := make(chan struct{})
 	s := PrepareSupervisor(t, "procfiles/RedirectStdout.yaml")
 	go func() {
@@ -316,7 +316,7 @@ func TestTaskMasterRedirectStdout(t *testing.T) {
 }
 
 func TestTaskMasterRedirectStderr(t *testing.T) {
-	testFile := "test/RedirectStderr.test"
+	testFile := "test_scripts/RedirectStderr.test"
 	ch := make(chan struct{})
 	s := PrepareSupervisor(t, "procfiles/RedirectStderr.yaml")
 	go func() {
@@ -347,7 +347,7 @@ func TestTaskMasterRedirectStderr(t *testing.T) {
 }
 
 func TestTaskMasterEnvVars(t *testing.T) {
-	testFile := "test/EnvVars.test"
+	testFile := "test_scripts/EnvVars.test"
 	ch := make(chan struct{})
 	s := PrepareSupervisor(t, "procfiles/EnvVars.yaml")
 	go func() {
@@ -378,7 +378,7 @@ func TestTaskMasterEnvVars(t *testing.T) {
 }
 
 func TestTaskMasterSetWorkingDir(t *testing.T) {
-	testFile := "test/SetWorkingDir.test"
+	testFile := "test_scripts/SetWorkingDir.test"
 	ch := make(chan struct{})
 	s := PrepareSupervisor(t, "procfiles/SetWorkingDir.yaml")
 	go func() {
@@ -410,7 +410,7 @@ func TestTaskMasterSetWorkingDir(t *testing.T) {
 }
 
 func TestTaskMasterUmask(t *testing.T) {
-	testFile := "test/SetUmask.test"
+	testFile := "test_scripts/SetUmask.test"
 	ch := make(chan struct{})
 	s := PrepareSupervisor(t, "procfiles/SetUmask.yaml")
 	go func() {

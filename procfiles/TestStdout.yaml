@@ -21,7 +21,7 @@
 # Options to discard the program’s stdout/stderr or to redirect them to files
   redirections:
     stdin:
-    stdout: test/TestStdout.test
+    stdout: test_scripts/TestStdout.test
     stderr:
 # Environment variables to set before launching the program
   envVars:
