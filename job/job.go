@@ -1,14 +1,17 @@
-package main
+package job
 
 import (
 	"fmt"
+
+	CFG "github.com/Travmatth/taskmaster/config"
+	INST "github.com/Travmatth/taskmaster/instance"
 )
 
 type Job struct {
 	ID        int
-	Instances []*Instance
-	pool      int
-	cfg       *JobConfig
+	Instances []*INST.Instance
+	Pool      int
+	Cfg       *CFG.JobConfig
 	AtLaunch  bool
 }
 

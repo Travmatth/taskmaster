@@ -5,7 +5,25 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	// . "github.com/Travmatth/taskmaster/ui"
+	// . "github.com/Travmatth/taskmaster/log"
+	// . "github.com/Travmatth/taskmaster/signals"
+	. "github.com/Travmatth/taskmaster/parse"
+	. "github.com/Travmatth/taskmaster/utils"
+	. "github.com/Travmatth/taskmaster/supervisor"
 )
+
+func PrepareSupervisor(t *testing.T, file string) *Supervisor {
+	Buf.Reset()
+	s := NewSupervisor(file, "", NewManager(), make(chan os.Signal))
+	if jobs, err := LoadJobsFromFile(file); err != nil {
+		panic(err)
+	} else {
+		s.Mgr.AddMultiJobs(jobs)
+		return s
+	}
+}
 
 func TestMain(m *testing.M) {
 	var logOut string
@@ -93,12 +111,12 @@ func TestTaskMasterRestartAfterUnexpectedExit(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(4)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
-		<-j.Instances[0].finishedCh
-		<-j.Instances[0].finishedCh
-		<-j.Instances[0].finishedCh
-		<-j.Instances[0].finishedCh
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
+		<-j.Instances[0].FinishedCh
+		<-j.Instances[0].FinishedCh
+		<-j.Instances[0].FinishedCh
+		<-j.Instances[0].FinishedCh
+		<-j.Instances[0].FinishedCh
 		time.Sleep(3)
 		ch <- struct{}{}
 	}()
@@ -135,7 +153,7 @@ func TestTaskMasterNoRestartAfterExpectedExit(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(5)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -156,7 +174,7 @@ func TestTaskMasterNoRestartAfterExit(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(6)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -178,8 +196,8 @@ func TestTaskMasterRestartAlways(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(7)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
+		<-j.Instances[0].FinishedCh
 		s.StopAllJobs(true)
 		ch <- struct{}{}
 	}()
@@ -207,7 +225,7 @@ func TestTaskMasterStartTimeout(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(8)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -273,7 +291,7 @@ func TestTaskMasterRedirectStdout(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(10)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -304,7 +322,7 @@ func TestTaskMasterRedirectStderr(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(11)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -335,7 +353,7 @@ func TestTaskMasterEnvVars(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(12)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -366,7 +384,7 @@ func TestTaskMasterSetWorkingDir(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(13)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
 		time.Sleep(1)
 		ch <- struct{}{}
 	}()
@@ -398,7 +416,7 @@ func TestTaskMasterUmask(t *testing.T) {
 	go func() {
 		j, _ := s.Mgr.GetJob(14)
 		s.StartAllJobs(true)
-		<-j.Instances[0].finishedCh
+		<-j.Instances[0].FinishedCh
 		ch <- struct{}{}
 	}()
 	select {
@@ -453,9 +471,5 @@ func TestTaskMasterStartStopMultipleInstances(t *testing.T) {
 	case <-time.After(time.Duration(5) * time.Second):
 		t.Errorf("TestStartStopMulti timed out, log:\n%s", Buf.String())
 	}
-	Buf.Reset()
-}
-
-func TestTaskMasterChildProcessesKilled(t *testing.T) {
 	Buf.Reset()
 }

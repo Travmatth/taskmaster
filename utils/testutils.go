@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/op/go-logging"
+	. "github.com/Travmatth/taskmaster/log"
 )
 
 var Buf bytes.Buffer
@@ -35,17 +36,6 @@ func MockLogger(out string) {
 	leveledBackend := logging.AddModuleLevel(loggingBackend)
 	leveledBackend.SetLevel(logging.DEBUG, "")
 	Log.SetBackend(leveledBackend)
-}
-
-func PrepareSupervisor(t *testing.T, file string) *Supervisor {
-	Buf.Reset()
-	s := NewSupervisor(file, NewManager(), make(chan os.Signal), "")
-	if jobs, err := LoadJobsFromFile(file); err != nil {
-		panic(err)
-	} else {
-		s.Mgr.AddMultiJobs(jobs)
-		return s
-	}
 }
 
 func LogsContain(t *testing.T, logs string, logStrings []string) {

@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"os"
@@ -116,24 +116,4 @@ func InitSignals() chan os.Signal {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 	return c
-}
-
-//ManageSignals handles the responses to signals sent to the program
-func ManageSignals(s *Supervisor, config string, c chan os.Signal) {
-	sig := <-c
-	if sig == syscall.SIGHUP {
-		if reloadJobs, err := LoadJobsFromFile(config); err != nil {
-			Log.Info("Error reloading configuration", err)
-			s.StopAllJobs(true)
-			os.Exit(1)
-		} else {
-			Log.Info("Supervisor: signal", sig, "received, reloading", config)
-			s.Reload(reloadJobs, false)
-		}
-	} else if sig == syscall.SIGTERM || sig == syscall.SIGINT {
-		Log.Info("Supervisor: exit signal received, shutting down")
-		s.StopAllJobs(true)
-		os.Exit(0)
-	}
-	go ManageSignals(s, config, c)
 }

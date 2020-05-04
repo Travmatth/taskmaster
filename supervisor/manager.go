@@ -1,31 +1,34 @@
-package main
+package supervisor
 
 import (
 	"fmt"
 	"sync"
+
+	JOB "github.com/Travmatth/taskmaster/job"
 )
 
+//Manager controls access to jobs for the Supervisor struct
 type Manager struct {
-	Jobs map[int]*Job
+	Jobs map[int]*JOB.Job
 	lock sync.Mutex
 }
 
 //NewManager create Manager struct
 func NewManager() *Manager {
 	return &Manager{
-		Jobs: make(map[int]*Job),
+		Jobs: make(map[int]*JOB.Job),
 	}
 }
 
 //AddSingleJob add single job
-func (m *Manager) AddSingleJob(job *Job) {
+func (m *Manager) AddSingleJob(job *JOB.Job) {
 	defer m.lock.Unlock()
 	m.lock.Lock()
 	m.Jobs[job.ID] = job
 }
 
 //AddMultiJobs adds multiple jobs
-func (m *Manager) AddMultiJobs(jobs []*Job) {
+func (m *Manager) AddMultiJobs(jobs []*JOB.Job) {
 	defer m.lock.Unlock()
 	m.lock.Lock()
 	for _, job := range jobs {
@@ -34,7 +37,7 @@ func (m *Manager) AddMultiJobs(jobs []*Job) {
 }
 
 //RemoveJob removes single job
-func (m *Manager) RemoveJob(id int) *Job {
+func (m *Manager) RemoveJob(id int) *JOB.Job {
 	defer m.lock.Unlock()
 	m.lock.Lock()
 	job := m.Jobs[id]
@@ -43,7 +46,7 @@ func (m *Manager) RemoveJob(id int) *Job {
 }
 
 //GetJob retrieves job
-func (m *Manager) GetJob(id int) (*Job, error) {
+func (m *Manager) GetJob(id int) (*JOB.Job, error) {
 	defer m.lock.Unlock()
 	m.lock.Lock()
 	if job, ok := m.Jobs[id]; ok {
@@ -53,8 +56,8 @@ func (m *Manager) GetJob(id int) (*Job, error) {
 }
 
 //GetAllJobs retrieves all jobs
-func (m *Manager) GetAllJobs(id int) []*Job {
-	var jobs []*Job
+func (m *Manager) GetAllJobs(id int) []*JOB.Job {
+	var jobs []*JOB.Job
 	defer m.lock.Unlock()
 	m.lock.Lock()
 	for _, job := range m.Jobs {

@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"io"
@@ -30,15 +30,14 @@ func setLogLevel(level string) logging.Level {
 }
 
 // NewLogger creates logger for use in program
-func NewLogger(name string, level string) error {
-	var f *os.File
+func NewLogger(name, level string) error {
 	var out io.Writer
 	var err error
 
 	flags := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 	if name == strings.ToLower("stdout") {
 		out = os.Stdout
-	} else if f, err = os.OpenFile(name, flags, 0666); err != nil {
+	} else if f, err := os.OpenFile(name, flags, 0666); err != nil {
 		return err
 	} else {
 		out = f

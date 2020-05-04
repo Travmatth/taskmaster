@@ -1,8 +1,11 @@
-package main
+package supervisor
 
 import (
 	"os"
 	"sync"
+
+	. "github.com/Travmatth/taskmaster/job"
+	. "github.com/Travmatth/taskmaster/log"
 )
 
 type Supervisor struct {
@@ -14,13 +17,14 @@ type Supervisor struct {
 	SigCh   chan os.Signal
 }
 
-//NewSupervisor returns a Supervisor new struct
-func NewSupervisor(file string, mgr *Manager, sigCh chan os.Signal, LogFile string) *Supervisor {
+//NewSupervisor returns a new Supervisor struct
+func NewSupervisor(cfg, logFile string,
+	mgr *Manager, sigCh chan os.Signal) *Supervisor {
 	return &Supervisor{
-		Config:  file,
+		Config:  cfg,
 		Mgr:     mgr,
 		SigCh:   sigCh,
-		LogFile: LogFile,
+		LogFile: logFile,
 	}
 }
 
@@ -28,37 +32,37 @@ func NewSupervisor(file string, mgr *Manager, sigCh chan os.Signal, LogFile stri
 func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	currentJobs, oldJobs, changedJobs, newJobs := []*Job{}, []*Job{}, []*Job{}, []*Job{}
+	current, old, changed, new := []*Job{}, []*Job{}, []*Job{}, []*Job{}
 	for _, reloaded := range jobs {
 		if job, ok := s.Mgr.Jobs[reloaded.ID]; !ok {
 			Log.Info("Supervisor diffing next jobs: new", reloaded)
-			newJobs = append(newJobs, reloaded)
-		} else if diff := reloaded.cfg.Same(job.cfg); !diff {
+			new = append(new, reloaded)
+		} else if diff := reloaded.Cfg.Same(job.Cfg); !diff {
 			Log.Info("Supervisor diffing next jobs: changed", reloaded)
-			changedJobs = append(changedJobs, job)
-			newJobs = append(newJobs, reloaded)
+			changed = append(changed, job)
+			new = append(new, reloaded)
 			s.Mgr.RemoveJob(job.ID)
 		} else {
 			Log.Info("Supervisor diffing next jobs: current", job)
-			currentJobs = append(currentJobs, job)
+			current = append(current, job)
 			s.Mgr.RemoveJob(job.ID)
 		}
 	}
 	for _, job := range s.Mgr.Jobs {
-		oldJobs = append(oldJobs, job)
+		old = append(old, job)
 		s.Mgr.RemoveJob(job.ID)
 	}
-	return currentJobs, oldJobs, changedJobs, newJobs
+	return current, old, changed, new
 }
 
 //Reload accepts a list of new jobs and diffs against current jobs
 // to determine which to stop, start, remove, or continue unchanged
 func (s *Supervisor) Reload(jobs []*Job, wait bool) error {
-	curr, old, changed, next := s.DiffJobs(jobs)
+	current, old, changed, next := s.DiffJobs(jobs)
 	for _, job := range append(old, changed...) {
 		job.Stop(wait)
 	}
-	s.AddMultiJobs(append(curr, next...))
+	s.AddMultiJobs(append(current, next...))
 	for _, job := range next {
 		if job.AtLaunch {
 			job.Start(wait)
@@ -81,24 +85,20 @@ func (s *Supervisor) WaitForExit() {
 
 //StartJob retrieves & starts a given job
 func (s *Supervisor) StartJob(id int, wait bool) error {
-	var job *Job
-	var err error
-	if job, err = s.Mgr.GetJob(id); err != nil {
-		return err
+	job, err := s.Mgr.GetJob(id)
+	if err == nil {
+		job.Start(wait)
 	}
-	job.Start(wait)
-	return nil
+	return err
 }
 
 //StopJob retrieves & stops a given job
 func (s *Supervisor) StopJob(id int) error {
-	var job *Job
-	var err error
-	if job, err = s.Mgr.GetJob(id); err != nil {
-		return err
+	job, err := s.Mgr.GetJob(id)
+	if err == nil {
+		job.Stop(true)
 	}
-	job.Stop(true)
-	return nil
+	return err
 }
 
 //GetJob returns the job with the given id

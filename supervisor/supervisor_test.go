@@ -1,8 +1,12 @@
-package main
+package supervisor
 
 import (
 	"os"
 	"testing"
+
+	. "github.com/Travmatth/taskmaster/job"
+	. "github.com/Travmatth/taskmaster/parse"
+	. "github.com/Travmatth/taskmaster/utils"
 )
 
 func processJobsFromFiles(files ...string) []*Job {
@@ -16,7 +20,7 @@ func processJobsFromFiles(files ...string) []*Job {
 
 func TestSupervisorDiffJobs(t *testing.T) {
 	ch := make(chan os.Signal)
-	s := NewSupervisor("", NewManager(), ch, "")
+	s := NewSupervisor("", "", NewManager(), ch)
 	orig := processJobsFromFiles(
 		"procfiles/DiffCurrentJobs.yaml",
 		"procfiles/DiffOldJobs.yaml",
@@ -45,7 +49,7 @@ func TestSupervisorDiffJobs(t *testing.T) {
 
 func TestSupervisorReloadJobs(t *testing.T) {
 	ch := make(chan os.Signal)
-	s := NewSupervisor("", NewManager(), ch, "")
+	s := NewSupervisor("", "", NewManager(), ch)
 	orig := processJobsFromFiles(
 		"procfiles/DiffCurrentJobs.yaml",
 		"procfiles/DiffOldJobs.yaml",

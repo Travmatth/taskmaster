@@ -1,8 +1,13 @@
-package main
+package parse
 
 import (
 	"syscall"
 	"testing"
+
+	. "github.com/Travmatth/taskmaster/config"
+	. "github.com/Travmatth/taskmaster/instance"
+	. "github.com/Travmatth/taskmaster/job"
+	. "github.com/Travmatth/taskmaster/utils"
 )
 
 func TestConfigOpenRedirIgnoresEmptyFile(t *testing.T) {
@@ -24,7 +29,7 @@ func TestConfigOpenRedirErrorsOnBadFile(t *testing.T) {
 }
 
 func TestConfigOpenRedirOpensFile(t *testing.T) {
-	if f, err := OpenRedir("procfiles/basic.yaml", 0); err != nil {
+	if f, err := OpenRedir("../procfiles/basic.yaml", 0); err != nil {
 		t.Error("OpenRedir should open valid file without error:", err)
 	} else if f == nil {
 		t.Errorf("OpenRedir should open valid file")
@@ -38,8 +43,9 @@ func TestConfigParseIntSetsDefaultVal(t *testing.T) {
 	var c JobConfig
 	var i Instance
 
+	parseErr := "ParseInt should not return error when setting default values"
 	if err := ParseInt(c, &i, "Umask", 2, ""); err != nil {
-		t.Errorf("ParseInt should not return an error when setting default values")
+		t.Errorf(parseErr)
 	} else if i.Umask != 2 {
 		t.Errorf("ParseInt should set default values when config empty")
 	}
@@ -62,8 +68,9 @@ func TestConfigParseIntSetsValue(t *testing.T) {
 	var i Instance
 
 	c.Umask = "3"
+	parseErr := "ParseInt should not return an error when setting valid values"
 	if err := ParseInt(c, &i, "Umask", 2, ""); err != nil {
-		t.Errorf("ParseInt should not return an error when setting valid values")
+		t.Errorf(parseErr)
 	} else if i.Umask != 3 {
 		t.Errorf("ParseInt should set valid values")
 	}
@@ -92,13 +99,13 @@ func TestConfigConfigureInstance(t *testing.T) {
 			Stderr: "",
 		},
 	}
-
+	parseErr := "ConfigureInstance should parse a valid configuration struct %s"
 	if err := ConfigureInstance(c, &i, 0); err != nil {
-		t.Errorf("ConfigureInstance should parse a valid configuration struct %s", err.Error())
+		t.Errorf(parseErr, err.Error())
 	}
-	if len(i.args) != 1 || i.args[0] != "foo" {
+	if len(i.Args) != 1 || i.Args[0] != "foo" {
 		t.Errorf("ConfigureInstance doesnt correctly set default args")
-	} else if i.restartPolicy != RESTARTNEVER {
+	} else if i.RestartPolicy != RESTARTNEVER {
 		t.Errorf("ConfigureInstance doesnt correctly set default restartPolicy")
 	} else if i.ExpectedExit != 0 {
 		t.Errorf("ConfigureInstance doesnt correctly set default ExpectedExit")
@@ -151,14 +158,15 @@ func TestConfigConfigureJob(t *testing.T) {
 	}
 
 	if err := ConfigureJob(c, &j, ids); err != nil {
-		t.Errorf("ConfigureJob should parse a valid configuration struct %s", err.Error())
+		t.Errorf("ConfigureJob should parse a valid configuration struct %s",
+			err.Error())
 	} else if j.ID != 0 {
 		t.Errorf("ConfigureJob doesnt correctly set ID")
 	} else if len(j.Instances) != 1 {
 		t.Errorf("ConfigureJob doesnt correctly set Instances")
-	} else if j.pool != 1 {
+	} else if j.Pool != 1 {
 		t.Errorf("ConfigureJob doesnt correctly set pool")
-	} else if *j.cfg != c {
+	} else if *j.Cfg != c {
 		t.Errorf("ConfigureJob doesnt correctly set cfg")
 	} else if j.AtLaunch != true {
 		t.Errorf("ConfigureJob doesnt correctly set AtLaunch")

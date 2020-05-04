@@ -3,28 +3,77 @@ package main
 import (
 	"fmt"
 	"os"
+	"syscall"
+
+	UI "github.com/Travmatth/taskmaster/ui"
+	. "github.com/Travmatth/taskmaster/log"
+	. "github.com/Travmatth/taskmaster/signals"
+	PARSE "github.com/Travmatth/taskmaster/parse"
+	SVSR "github.com/Travmatth/taskmaster/supervisor"
 )
 
-func main() {
-	if l := len(os.Args); l < 3 {
-		fmt.Println("Usage: ./taskmaster <Config_File> <Log_File> [Log_level]")
+type Opts struct {
+	Config string
+	Log string
+	Level string
+}
+
+func parseOpts(args []string) (opts Opts, ok bool) {
+	ok = true
+	if len(args) == 3 {
+		opts.Level = "3"
+	} else if len(args) == 4 {
+		opts.Level = args[3]
+	} else {
+		ok = false
 		return
 	}
-	config, logOut, debugLevel := os.Args[1], os.Args[2], os.Args[3]
-	if jobs, err := LoadJobsFromFile(config); err != nil {
+	opts.Config, opts.Log = args[1], args[2]
+	return
+}
+
+//ManageSignals handles the responses to signals sent to the program
+func ManageSignals(s *SVSR.Supervisor, config string, c chan os.Signal) {
+	sig := <-c
+	if sig == syscall.SIGHUP {
+		if reloadJobs, err := PARSE.LoadJobsFromFile(config); err != nil {
+			Log.Info("Error reloading configuration", err)
+			s.StopAllJobs(true)
+			os.Exit(1)
+		} else {
+			Log.Info("Supervisor: signal", sig, "received, reloading", config)
+			s.Reload(reloadJobs, false)
+		}
+	} else if sig == syscall.SIGTERM || sig == syscall.SIGINT {
+		Log.Info("Supervisor: exit signal received, shutting down")
+		s.StopAllJobs(true)
+		os.Exit(0)
+	}
+	go ManageSignals(s, config, c)
+}
+
+func main() {
+	if opts, ok := parseOpts(os.Args); ok == false {
+		fmt.Println("Usage: ./taskmaster <Config_File> <Log_File> [Log_Level]")
+		fmt.Println("Config_File: Procfile you wish to run")
+		fmt.Println("Log_File: Log file you wish to use")
+		fmt.Println("Log_Level: 0 DEBUG -> 5 FATAL")
+	} else if jobs, err := PARSE.LoadJobsFromFile(opts.Config); err != nil {
 		fmt.Println(err)
-	} else if logErr := NewLogger(logOut, debugLevel); logErr != nil {
-		fmt.Println(logErr)
+	} else if err := NewLogger(opts.Log, opts.Level); err != nil {
+		fmt.Println(err)
 	} else {
-		s := NewSupervisor(config, NewManager(), InitSignals(), logOut)
-		go ManageSignals(s, config, s.SigCh)
+		s := SVSR.NewSupervisor(opts.Config, opts.Log,
+								SVSR.NewManager(), InitSignals())
+		go ManageSignals(s, opts.Config, s.SigCh)
 		for {
 			if err := s.Reload(jobs, false); err != nil {
 				Log.Info("Error reloading configuration", err)
 				s.StopAllJobs(true)
 				os.Exit(1)
 			}
-			StartUI(s)
+			f := UI.NewFrontend(s)
+			f.StartUI()
 		}
 	}
 }
