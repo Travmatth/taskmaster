@@ -8,6 +8,9 @@ import (
 	. "github.com/Travmatth/taskmaster/log"
 )
 
+/*
+ * Supervisor models the users manipulation of jobs
+ */
 type Supervisor struct {
 	Config  string
 	LogFile string
@@ -17,7 +20,9 @@ type Supervisor struct {
 	SigCh   chan os.Signal
 }
 
-//NewSupervisor returns a new Supervisor struct
+/*
+ * NewSupervisor returns a new Supervisor struct
+ */
 func NewSupervisor(cfg, logFile string,
 	mgr *Manager, sigCh chan os.Signal) *Supervisor {
 	return &Supervisor{
@@ -28,10 +33,12 @@ func NewSupervisor(cfg, logFile string,
 	}
 }
 
-//DiffJobs sorts the given jobs into current, old, changed, and new slices
+/*
+ * DiffJobs sorts the given jobs into current, old, changed, and new slices
+ */
 func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
-	s.lock.Lock()
 	defer s.lock.Unlock()
+	s.lock.Lock()
 	current, old, changed, new := []*Job{}, []*Job{}, []*Job{}, []*Job{}
 	for _, reloaded := range jobs {
 		if job, ok := s.Mgr.Jobs[reloaded.ID]; !ok {
@@ -55,8 +62,10 @@ func (s *Supervisor) DiffJobs(jobs []*Job) ([]*Job, []*Job, []*Job, []*Job) {
 	return current, old, changed, new
 }
 
-//Reload accepts a list of new jobs and diffs against current jobs
-// to determine which to stop, start, remove, or continue unchanged
+/*
+ * Reload accepts a list of new jobs and diffs against current jobs
+ * to determine which to stop, start, remove, or continue unchanged
+ */
 func (s *Supervisor) Reload(jobs []*Job, wait bool) error {
 	current, old, changed, next := s.DiffJobs(jobs)
 	for _, job := range append(old, changed...) {
@@ -71,19 +80,25 @@ func (s *Supervisor) Reload(jobs []*Job, wait bool) error {
 	return nil
 }
 
-//AddMultiJobs add multiple jobs to manager
+/*
+ * AddMultiJobs add multiple jobs to manager
+ */
 func (s *Supervisor) AddMultiJobs(jobs []*Job) {
-	s.lock.Lock()
 	defer s.lock.Unlock()
+	s.lock.Lock()
 	s.Mgr.AddMultiJobs(jobs)
 }
 
-//WaitForExit waits for exit
+/*
+ * WaitForExit waits for exit
+ */
 func (s *Supervisor) WaitForExit() {
 	s.StopAllJobs(true)
 }
 
-//StartJob retrieves & starts a given job
+/*
+ * StartJob retrieves & starts a given job
+ */
 func (s *Supervisor) StartJob(id int, wait bool) error {
 	job, err := s.Mgr.GetJob(id)
 	if err == nil {
@@ -92,7 +107,9 @@ func (s *Supervisor) StartJob(id int, wait bool) error {
 	return err
 }
 
-//StopJob retrieves & stops a given job
+/*
+ * StopJob retrieves & stops a given job
+ */
 func (s *Supervisor) StopJob(id int) error {
 	job, err := s.Mgr.GetJob(id)
 	if err == nil {
@@ -101,17 +118,21 @@ func (s *Supervisor) StopJob(id int) error {
 	return err
 }
 
-//GetJob returns the job with the given id
+/*
+ * GetJob returns the job with the given id
+ */
 func (s *Supervisor) GetJob(id int) (*Job, error) {
-	s.lock.Lock()
 	defer s.lock.Unlock()
+	s.lock.Lock()
 	return s.Mgr.GetJob(id)
 }
 
-//StartAllJobs starts all jobs & waits for start
+/*
+ * StartAllJobs starts all jobs & waits for start
+ */
 func (s *Supervisor) StartAllJobs(wait bool) {
-	s.Mgr.lock.Lock()
 	defer s.Mgr.lock.Unlock()
+	s.Mgr.lock.Lock()
 	ch := make(chan *Job)
 	n := len(s.Mgr.Jobs)
 	for _, job := range s.Mgr.Jobs {
@@ -127,10 +148,12 @@ func (s *Supervisor) StartAllJobs(wait bool) {
 	}
 }
 
-//StopAllJobs stops all jobs & waits for stop
+/*
+ * StopAllJobs stops all jobs & waits for stop
+ */
 func (s *Supervisor) StopAllJobs(wait bool) {
-	s.Mgr.lock.Lock()
 	defer s.Mgr.lock.Unlock()
+	s.Mgr.lock.Lock()
 	ch := make(chan *Job)
 	n := len(s.Mgr.Jobs)
 	for _, job := range s.Mgr.Jobs {
@@ -144,18 +167,22 @@ func (s *Supervisor) StopAllJobs(wait bool) {
 	}
 }
 
-//HasJob returns number of jobs being managed
+/*
+ * HasJob returns number of jobs being managed
+ */
 func (s *Supervisor) HasJob(id int) bool {
-	s.Mgr.lock.Lock()
 	defer s.Mgr.lock.Unlock()
+	s.Mgr.lock.Lock()
 	_, ok := s.Mgr.Jobs[id]
 	return ok
 }
 
-//ForAllJobs performs a callback on the managed jobs
+/*
+ * ForAllJobs performs a callback on the managed jobs
+ */
 func (s *Supervisor) ForAllJobs(f func(job *Job)) {
-	s.Mgr.lock.Lock()
 	defer s.Mgr.lock.Unlock()
+	s.Mgr.lock.Lock()
 	for _, job := range s.Mgr.Jobs {
 		f(job)
 	}

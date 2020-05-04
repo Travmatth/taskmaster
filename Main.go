@@ -5,17 +5,17 @@ import (
 	"os"
 	"syscall"
 
-	UI "github.com/Travmatth/taskmaster/ui"
 	. "github.com/Travmatth/taskmaster/log"
-	. "github.com/Travmatth/taskmaster/signals"
 	PARSE "github.com/Travmatth/taskmaster/parse"
+	SIG "github.com/Travmatth/taskmaster/signals"
 	SVSR "github.com/Travmatth/taskmaster/supervisor"
+	UI "github.com/Travmatth/taskmaster/ui"
 )
 
 type Opts struct {
 	Config string
-	Log string
-	Level string
+	Log    string
+	Level  string
 }
 
 func parseOpts(args []string) (opts Opts, ok bool) {
@@ -64,7 +64,7 @@ func main() {
 		fmt.Println(err)
 	} else {
 		s := SVSR.NewSupervisor(opts.Config, opts.Log,
-								SVSR.NewManager(), InitSignals())
+			SVSR.NewManager(), SIG.InitSignals())
 		go ManageSignals(s, opts.Config, s.SigCh)
 		for {
 			if err := s.Reload(jobs, false); err != nil {

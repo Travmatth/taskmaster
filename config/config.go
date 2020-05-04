@@ -4,14 +4,18 @@ import (
 	"fmt"
 )
 
-// Redirections store the redirection file names
+/*
+ * Redirections store the redirection file names
+ */
 type Redirections struct {
 	Stdin  string `json:"Stdin"`
 	Stdout string `json:"Stdout"`
 	Stderr string `json:"Stderr"`
 }
 
-// JobConfig represents the config struct loaded from yaml
+/*
+ * JobConfig represents the config struct loaded from yaml
+ */
 type JobConfig struct {
 	ID            string `json:"ID" yaml:"id"`
 	Command       string `json:"Command" yaml:"command"`
@@ -29,7 +33,9 @@ type JobConfig struct {
 	Redirections
 }
 
-//Same compares two configuration files for equality
+/*
+ * Same compares two configuration files for deep equality
+ */
 func (c JobConfig) Same(cfg *JobConfig) bool {
 	if c.ID != cfg.ID ||
 		c.Command != cfg.Command ||
@@ -52,6 +58,9 @@ func (c JobConfig) Same(cfg *JobConfig) bool {
 	return true
 }
 
+/*
+ * String is the printed representation of the struct
+ */
 func (c JobConfig) String() string {
 	return fmt.Sprintf("JobConfig %s", c.ID)
 }

@@ -16,11 +16,17 @@ import (
 	S "github.com/Travmatth/taskmaster/supervisor"
 )
 
+/*
+ * Frontend models the ui shown to the user
+ */
 type Frontend struct {
 	supervisor *S.Supervisor
 	scanner    *bufio.Scanner
 }
 
+/*
+ * NewFrontend creates a new Frontend struct
+ */
 func NewFrontend(supervisor *S.Supervisor) (f *Frontend) {
 	f = &Frontend{
 		supervisor: supervisor,
@@ -29,6 +35,9 @@ func NewFrontend(supervisor *S.Supervisor) (f *Frontend) {
 	return
 }
 
+/*
+ * StartUI is the read-eval loop
+ */
 func (f *Frontend) StartUI() {
 	fmt.Print("> ")
 UILoop:
@@ -46,6 +55,10 @@ UILoop:
 	}
 }
 
+/*
+ * DecideCommand parses the command to be executed, requesting
+ * more informationif needed.
+ */
 func (f *Frontend) DecideCommand(input string) bool {
 	switch {
 	case input == "exit":
@@ -89,12 +102,18 @@ func (f *Frontend) DecideCommand(input string) bool {
 	return false
 }
 
+/*
+ * WithId call a function if id given is valid
+ */
 func (f *Frontend) WithId(input string, funcWithId func(id int)) {
 	if id := f.SplitCommand(input); id != -1 {
 		funcWithId(id)
 	}
 }
 
+/*
+ * FormatIDs returns the job commands used
+ */
 func (f *Frontend) FormatIDs() string {
 	jobs := make([]string, 0)
 	f.supervisor.ForAllJobs(func(job *JOB.Job) {
@@ -104,6 +123,9 @@ func (f *Frontend) FormatIDs() string {
 	return strings.Join(jobs, "")
 }
 
+/*
+ * FormatJobs returns the list of jobs currently managed
+ */
 func (f *Frontend) FormatJobs() string {
 	jobs := make([]string, 0)
 	f.supervisor.ForAllJobs(func(job *JOB.Job) {
@@ -122,6 +144,9 @@ func (f *Frontend) FormatJobs() string {
 	return strings.Join(jobs, "")
 }
 
+/*
+ * SplitCommand detects and parses commands of different lengths
+ */
 func (f *Frontend) SplitCommand(input string) (id int) {
 	words := strings.Fields(input)
 	switch len(words) {
@@ -135,6 +160,9 @@ func (f *Frontend) SplitCommand(input string) (id int) {
 	return
 }
 
+/*
+ * PrintLogs displays taskmasters logs
+ */
 func (f *Frontend) PrintLogs() {
 	data, err := ioutil.ReadFile(f.supervisor.LogFile)
 	if err != nil {
@@ -143,6 +171,9 @@ func (f *Frontend) PrintLogs() {
 	fmt.Print(string(data))
 }
 
+/*
+ * GetIdFromDefault reads and verfies a job ID
+ */
 func (f *Frontend) GetIdFromDefault(input string) (id int) {
 	var err error
 	for {
@@ -162,6 +193,9 @@ func (f *Frontend) GetIdFromDefault(input string) (id int) {
 	}
 }
 
+/*
+ * GetId reads and verfies a job ID
+ */
 func (f *Frontend) GetId() (id int) {
 	var err error
 	for {
@@ -182,6 +216,9 @@ func (f *Frontend) GetId() (id int) {
 	}
 }
 
+/*
+ * PrintHelp displays the program usage
+ */
 func (f *Frontend) PrintHelp() {
 	fmt.Println("Commands:")
 	fmt.Println("ps:         List current jobs being managed")

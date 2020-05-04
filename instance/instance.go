@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	. "github.com/Travmatth/taskmaster/config"
+	CFG "github.com/Travmatth/taskmaster/config"
 	. "github.com/Travmatth/taskmaster/log"
-	. "github.com/Travmatth/taskmaster/signals"
+	SIG "github.com/Travmatth/taskmaster/signals"
 )
 
 const (
@@ -63,7 +63,7 @@ type Instance struct {
 	Mutex         sync.RWMutex
 	Condition     *sync.Cond
 	State         *os.ProcessState
-	Cfg           *JobConfig
+	Cfg           *CFG.JobConfig
 	Starting      bool
 	FinishedCh    chan struct{}
 }
@@ -281,7 +281,7 @@ func (i *Instance) PIDExists() bool {
 		//If sig is 0, then no signal is sent, but error checking is still performed;
 		//this can be used to check for the existence of a process ID or
 		//process group ID.
-		return i.Process.Signal(Signals["SIGEXISTS"]) == nil
+		return i.Process.Signal(SIG.Signals["SIGEXISTS"]) == nil
 	}
 	return false
 }
@@ -346,7 +346,7 @@ func (i *Instance) stopTimeout() {
 	case <-time.After(time.Duration(i.StopTimeout) * time.Second):
 		Log.Info(i, ": did not stop after timeout of ", i.StopTimeout, "seconds SIGKILL issued")
 		if i.Process != nil {
-			i.Process.Signal(Signals["SIGKILL"])
+			i.Process.Signal(SIG.Signals["SIGKILL"])
 			<-i.FinishedCh
 		}
 	case <-i.FinishedCh:

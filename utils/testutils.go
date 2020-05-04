@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/op/go-logging"
 	. "github.com/Travmatth/taskmaster/log"
+	"github.com/op/go-logging"
 )
 
 var Buf bytes.Buffer
@@ -51,6 +51,7 @@ func LogsContain(t *testing.T, logs string, logStrings []string) {
 	}
 	logs = strings.ReplaceAll(logs, "\n", "")
 	if !ok || logs != "" {
-		t.Errorf("Log Error: Logs should contain:\n%s\nContains:\n%s\n", strings.Join(logStrings, "\n"), fullLogs)
+		message := "Log Error: Logs should contain:\n%s\nContains:\n%s\n"
+		t.Errorf(message, strings.Join(logStrings, "\n"), fullLogs)
 	}
 }

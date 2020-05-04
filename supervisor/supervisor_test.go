@@ -4,15 +4,15 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/Travmatth/taskmaster/job"
-	. "github.com/Travmatth/taskmaster/parse"
+	JOB "github.com/Travmatth/taskmaster/job"
+	PARSE "github.com/Travmatth/taskmaster/parse"
 	. "github.com/Travmatth/taskmaster/utils"
 )
 
-func processJobsFromFiles(files ...string) []*Job {
-	var total []*Job
+func processJobsFromFiles(files ...string) []*JOB.Job {
+	var total []*JOB.Job
 	for _, f := range files {
-		jobs, _ := LoadJobsFromFile(f)
+		jobs, _ := PARSE.LoadJobsFromFile(f)
 		total = append(total, jobs...)
 	}
 	return total

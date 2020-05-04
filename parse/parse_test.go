@@ -4,9 +4,9 @@ import (
 	"syscall"
 	"testing"
 
-	. "github.com/Travmatth/taskmaster/config"
-	. "github.com/Travmatth/taskmaster/instance"
-	. "github.com/Travmatth/taskmaster/job"
+	CFG "github.com/Travmatth/taskmaster/config"
+	INST "github.com/Travmatth/taskmaster/instance"
+	JOB "github.com/Travmatth/taskmaster/job"
 	. "github.com/Travmatth/taskmaster/utils"
 )
 
@@ -40,11 +40,10 @@ func TestConfigOpenRedirOpensFile(t *testing.T) {
 }
 
 func TestConfigParseIntSetsDefaultVal(t *testing.T) {
-	var c JobConfig
-	var i Instance
-
+	var c CFG.JobConfig
+	var i INST.Instance
 	parseErr := "ParseInt should not return error when setting default values"
-	if err := ParseInt(c, &i, "Umask", 2, ""); err != nil {
+	if err := ParseInt(c, &i, "Umask", "", 2); err != nil {
 		t.Errorf(parseErr)
 	} else if i.Umask != 2 {
 		t.Errorf("ParseInt should set default values when config empty")
@@ -53,23 +52,21 @@ func TestConfigParseIntSetsDefaultVal(t *testing.T) {
 }
 
 func TestConfigParseIntDetectsInvalidInput(t *testing.T) {
-	var c JobConfig
-	var i Instance
-
+	var c CFG.JobConfig
+	var i INST.Instance
 	c.Umask = "foo"
-	if err := ParseInt(c, &i, "Umask", 2, ""); err == nil {
+	if err := ParseInt(c, &i, "Umask", "", 2); err == nil {
 		t.Errorf("ParseInt should return an error when setting invalid values")
 	}
 	Buf.Reset()
 }
 
 func TestConfigParseIntSetsValue(t *testing.T) {
-	var c JobConfig
-	var i Instance
-
+	var c CFG.JobConfig
+	var i INST.Instance
 	c.Umask = "3"
 	parseErr := "ParseInt should not return an error when setting valid values"
-	if err := ParseInt(c, &i, "Umask", 2, ""); err != nil {
+	if err := ParseInt(c, &i, "Umask", "", 2); err != nil {
 		t.Errorf(parseErr)
 	} else if i.Umask != 3 {
 		t.Errorf("ParseInt should set valid values")
@@ -78,8 +75,8 @@ func TestConfigParseIntSetsValue(t *testing.T) {
 }
 
 func TestConfigConfigureInstance(t *testing.T) {
-	var i Instance
-	c := JobConfig{
+	var i INST.Instance
+	c := CFG.JobConfig{
 		ID:            "0",
 		Command:       "foo",
 		Instances:     "",
@@ -93,7 +90,7 @@ func TestConfigConfigureInstance(t *testing.T) {
 		EnvVars:       "",
 		WorkingDir:    "",
 		Umask:         "",
-		Redirections: Redirections{
+		Redirections: CFG.Redirections{
 			Stdin:  "",
 			Stdout: "",
 			Stderr: "",
@@ -105,7 +102,7 @@ func TestConfigConfigureInstance(t *testing.T) {
 	}
 	if len(i.Args) != 1 || i.Args[0] != "foo" {
 		t.Errorf("ConfigureInstance doesnt correctly set default args")
-	} else if i.RestartPolicy != RESTARTNEVER {
+	} else if i.RestartPolicy != INST.RESTARTNEVER {
 		t.Errorf("ConfigureInstance doesnt correctly set default restartPolicy")
 	} else if i.ExpectedExit != 0 {
 		t.Errorf("ConfigureInstance doesnt correctly set default ExpectedExit")
@@ -134,9 +131,9 @@ func TestConfigConfigureInstance(t *testing.T) {
 }
 
 func TestConfigConfigureJob(t *testing.T) {
-	var j Job
+	var j JOB.Job
 	ids := make(map[int]bool)
-	c := JobConfig{
+	c := CFG.JobConfig{
 		ID:            "0",
 		Command:       "foo",
 		Instances:     "",
@@ -150,7 +147,7 @@ func TestConfigConfigureJob(t *testing.T) {
 		EnvVars:       "",
 		WorkingDir:    "",
 		Umask:         "",
-		Redirections: Redirections{
+		Redirections: CFG.Redirections{
 			Stdin:  "",
 			Stdout: "",
 			Stderr: "",
@@ -175,10 +172,10 @@ func TestConfigConfigureJob(t *testing.T) {
 }
 
 func TestConfigConfigureJobShouldErrorOnRepeatID(t *testing.T) {
-	var j Job
+	var j JOB.Job
 	ids := make(map[int]bool)
 	ids[0] = true
-	c := JobConfig{
+	c := CFG.JobConfig{
 		ID:            "0",
 		Command:       "foo",
 		Instances:     "",
@@ -192,7 +189,7 @@ func TestConfigConfigureJobShouldErrorOnRepeatID(t *testing.T) {
 		EnvVars:       "",
 		WorkingDir:    "",
 		Umask:         "",
-		Redirections: Redirections{
+		Redirections: CFG.Redirections{
 			Stdin:  "",
 			Stdout: "",
 			Stderr: "",

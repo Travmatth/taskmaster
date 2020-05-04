@@ -29,7 +29,9 @@ func setLogLevel(level string) logging.Level {
 	}
 }
 
-// NewLogger creates logger for use in program
+/*
+ * NewLogger creates logger for use in program
+ */
 func NewLogger(name, level string) error {
 	var out io.Writer
 	var err error
