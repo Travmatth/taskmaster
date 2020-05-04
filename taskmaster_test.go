@@ -10,8 +10,8 @@ import (
 	// . "github.com/Travmatth/taskmaster/log"
 	// . "github.com/Travmatth/taskmaster/signals"
 	. "github.com/Travmatth/taskmaster/parse"
-	. "github.com/Travmatth/taskmaster/utils"
 	. "github.com/Travmatth/taskmaster/supervisor"
+	. "github.com/Travmatth/taskmaster/utils"
 )
 
 func PrepareSupervisor(t *testing.T, file string) *Supervisor {

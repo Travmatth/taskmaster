@@ -14,32 +14,54 @@ import (
 )
 
 const (
-	// PROCSTOPPED signifies process not currently running
+	/*
+	 * PROCSTOPPED signifies process not currently running
+	 */
 	PROCSTOPPED = iota
-	// PROCRUNNING signifies process currently running
+	/*
+	 * PROCRUNNING signifies process currently running
+	 */
 	PROCRUNNING
-	//PROCSTART signifies process beginning its start sequence
+	/*
+	 * PROCSTART signifies process beginning its start sequence
+	 */
 	PROCSTART
-	//PROCEXITED signifies process has ended
+	/*
+	 * PROCEXITED signifies process has ended
+	 */
 	PROCEXITED
-	//PROCBACKOFF signifies that process in intermediate State, should not alter
+	/*
+	 * PROCBACKOFF signifies should not alter process
+	 */
 	PROCBACKOFF
-	//PROCSTOPPING signifies in process of stopping
+	/*
+	 * PROCSTOPPING signifies in process of stopping
+	 */
 	PROCSTOPPING
-	//PROCSTARTFAIL signifies process could not start successfully
+	/*
+	 * PROCSTARTFAIL signifies process could not start successfully
+	 */
 	PROCSTARTFAIL
 )
 
 const (
-	//RESTARTALWAYS signifies restart whenever process is stopped
+	/*
+	 * RESTARTALWAYS signifies restart whenever process is stopped
+	 */
 	RESTARTALWAYS = iota
-	//RESTARTNEVER signifies never restart process
+	/*
+	 * RESTARTNEVER signifies never restart process
+	 */
 	RESTARTNEVER
-	//RESTARTUNEXPECTED signifies restart on unexpected exit
+	/*
+	 * RESTARTUNEXPECTED signifies restart on unexpected exit
+	 */
 	RESTARTUNEXPECTED
 )
 
-// Instance struct manages the execution of one process
+/*
+ * Instance struct manages the execution of one process
+ */
 type Instance struct {
 	JobID         int
 	InstanceID    int
@@ -260,7 +282,9 @@ func (i *Instance) CreateJob() error {
 	return nil
 }
 
-//WaitForExit waits for os.Process exit and saves returned ProcessState
+/*
+ * WaitForExit waits for os.Process exit and saves returned ProcessState
+ */
 func (i *Instance) WaitForExit() {
 	State, err := i.Process.Wait()
 	if err != nil {
@@ -274,20 +298,28 @@ func (i *Instance) WaitForExit() {
 	i.Mutex.Unlock()
 }
 
-//PIDExists check the existence of given process
+/*
+ * PIDExists check the existence of given process
+ */
 func (i *Instance) PIDExists() bool {
 	if i.Process != nil && i.State != nil {
-		//`man 2 kill`
-		//If sig is 0, then no signal is sent, but error checking is still performed;
-		//this can be used to check for the existence of a process ID or
-		//process group ID.
+		/*
+		 * `man 2 kill`
+		 * If sig is 0, then no signal is sent, but error checking is still
+		 * performed; this can be used to check for the existence of a process
+		 * ID or process group ID.
+		 */
 		return i.Process.Signal(SIG.Signals["SIGEXISTS"]) == nil
 	}
 	return false
 }
 
-//startCheckup checks that the process has successfully started after the specified start checkup time
-func (i *Instance) startCheckup(callback func(), end time.Time, monitor *int32, program *int32) {
+/*
+ * startCheckup checks that the process has successfully started after the
+ * specified start checkup time
+ */
+func (i *Instance) startCheckup(callback func(), end time.Time,
+	monitor *int32, program *int32) {
 	for time.Now().Before(end) && atomic.LoadInt32(program) == 0 {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
@@ -300,19 +332,22 @@ func (i *Instance) startCheckup(callback func(), end time.Time, monitor *int32, 
 		i.Status = PROCRUNNING
 		callback()
 	} else {
-		Log.Info(i, ": monitor failed, program exit: ", progState, " with job status", i.Status)
+		message := ": monitor failed, program exit: "
+		Log.Info(i, message, progState, " with job status", i.Status)
 	}
 }
 
-//ChangeStatus sets State
-func (i *Instance) ChangeStatus(State int) {
-	i.Status = State
+/*
+ * ChangeStatus sets State
+ */
+func (i *Instance) ChangeStatus(state int) {
+	i.Status = state
 }
 
 /*
-StopInstance is used to stop the process by sending the specified stop signal
-or the SIGKILL signal if the stop signal is not received
-*/
+ * StopInstance is used to stop the process by sending the specified stop signal
+ * or the SIGKILL signal if the stop signal is not received
+ */
 func (i *Instance) StopInstance(wait bool) {
 	i.Mutex.Lock()
 	i.Stopped = true
@@ -321,7 +356,9 @@ func (i *Instance) StopInstance(wait bool) {
 	if wait {
 		for {
 			i.Mutex.RLock()
-			if i.Status != PROCSTART && i.Status != PROCRUNNING && i.Status != PROCSTOPPING {
+			if i.Status != PROCSTART &&
+				i.Status != PROCRUNNING &&
+				i.Status != PROCSTOPPING {
 				i.Mutex.RUnlock()
 				break
 			}
@@ -332,9 +369,9 @@ func (i *Instance) StopInstance(wait bool) {
 }
 
 /*
-stopTimeout signals the process to stop using the specified signal
-if wait() is not called then a SIGKILL is sent to the process
-*/
+ * stopTimeout signals the process to stop using the specified signal
+ * if wait() is not called then a SIGKILL is sent to the process
+ */
 func (i *Instance) stopTimeout() {
 	i.Mutex.RLock()
 	if i.Process != nil {
@@ -344,7 +381,8 @@ func (i *Instance) stopTimeout() {
 	i.Mutex.RUnlock()
 	select {
 	case <-time.After(time.Duration(i.StopTimeout) * time.Second):
-		Log.Info(i, ": did not stop after timeout of ", i.StopTimeout, "seconds SIGKILL issued")
+		message := ": did not stop after timeout of "
+		Log.Info(i, message, i.StopTimeout, "seconds SIGKILL issued")
 		if i.Process != nil {
 			i.Process.Signal(SIG.Signals["SIGKILL"])
 			<-i.FinishedCh
@@ -353,7 +391,9 @@ func (i *Instance) stopTimeout() {
 	}
 }
 
-//GetStatus return status of the process
+/*
+ * GetStatus return status of the process
+ */
 func (i *Instance) GetStatus() string {
 	status := ""
 	i.Mutex.RLock()
@@ -377,6 +417,9 @@ func (i *Instance) GetStatus() string {
 	return status
 }
 
+/*
+ * String returns the printable representation of the struct
+ */
 func (i *Instance) String() string {
 	return fmt.Sprintf("Job %d Instance %d", i.JobID, i.InstanceID)
 }
