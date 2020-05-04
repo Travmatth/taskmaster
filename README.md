@@ -9,7 +9,7 @@ Usage: ./taskmaster <Config_File> <Log_File> [Log_Level]
 
 Taskmaster accepts a config file containing a list of processes to start, along with the options managing their execution and termination. Provides a simple UI to manage processes.
 
-# Configuration:
+# Procfile:
 
 ```
 - id: an ID to identify the process, must be unique
@@ -29,6 +29,7 @@ Taskmaster accepts a config file containing a list of processes to start, along 
   envVars: [string] "name=val name2=val2" variables to provide to the process environment
   workingDir: [string] a path to set as the current working directory
   umask: [int] umask to set the process permissions
+ - id: ID of next process to run
 ```
 
 # UI Commands
