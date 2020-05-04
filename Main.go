@@ -21,7 +21,7 @@ type Opts struct {
 func parseOpts(args []string) (opts Opts, ok bool) {
 	ok = true
 	if len(args) == 3 {
-		opts.Level = "3"
+		opts.Level = "4"
 	} else if len(args) == 4 {
 		opts.Level = args[3]
 	} else {
@@ -55,9 +55,10 @@ func ManageSignals(s *SVSR.Supervisor, config string, c chan os.Signal) {
 func main() {
 	if opts, ok := parseOpts(os.Args); ok == false {
 		fmt.Println("Usage: ./taskmaster <Config_File> <Log_File> [Log_Level]")
-		fmt.Println("Config_File: Procfile you wish to run")
-		fmt.Println("Log_File: Log file you wish to use")
-		fmt.Println("Log_Level: 0 DEBUG -> 5 FATAL")
+		fmt.Println("\tConfig_File: Procfile you wish to run")
+		fmt.Println("\tLog_File: Log file you wish to use")
+		levels := "0 CRITICAL, 1 ERROR, 2 WARNING, 3 NOTICE, 4 INFO, 5 DEBUG"
+		fmt.Println("\tLog_Level: ", levels)
 	} else if jobs, err := PARSE.LoadJobsFromFile(opts.Config); err != nil {
 		fmt.Println(err)
 	} else if err := NewLogger(opts.Log, opts.Level); err != nil {

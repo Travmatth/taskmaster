@@ -1,6 +1,11 @@
-# TaskMaster: A process manager
-
+# TaskMaster: A MacOS process manager
 `Usage: ./taskmaster <Config_File> <Log_File> [Log_level]`
+```
+Usage: ./taskmaster <Config_File> <Log_File> [Log_Level]
+        Config_File: Procfile you wish to run
+        Log_File: Log file you wish to use
+        Log_Level:  0 CRITICAL, 1 ERROR, 2 WARNING, 3 NOTICE, 4 INFO, 5 DEBUG
+```
 
 Taskmaster accepts a config file containing a list of processes to start, along with the options managing their execution and termination. Provides a simple UI to manage processes.
 
@@ -39,24 +44,3 @@ stopAll:    stop all jobs
 reload:     reload the configuration file
 exit:       stop all jobs and exit taskmaster
 ```
-
-# Requirements:
-
-- [x] See the Status of all the programs described in the config file ("Status" command)
-- [x] Start / stop / restart programs
-- [x] Reload the configuration file without stopping the main program
-- [x] Stop the main program
-The configuration file must allow the user to specify the following, for each program that is to be supervised:
-- [x] The command to use to launch the program
-- [x] The number of processes to start and keep running
-- [x] Whether to start this program at launch or not
-- [x] Whether the program should be restarted always, never, or on unexpected exits only
-- [x] Which return codes represent an "expected" exit Status
-- [x] How long the program should be running after it’s started for it to be considered "successfully started"
-- [x] How many times a restart should be attempted before aborting
-- [x] Which signal should be used to stop (i.e. exit gracefully) the program
-- [x] How long to wait after a graceful stop before killing the program
-- [x] Options to discard the program’s stdout/stderr or to redirect them to files
-- [x] Environment variables to set before launching the program
-- [x] A working directory to set before launching the program
-- [x] An umask to set before launching the program
