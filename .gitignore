@@ -1,1 +1,6 @@
 taskmaster
+ID0_err.test
+ID0_in.test
+ID0_out.test
+logfile
+out.yml
